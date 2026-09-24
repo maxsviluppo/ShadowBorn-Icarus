@@ -4,8 +4,8 @@ import ts from 'typescript';
 const code=await fs.readFile(new URL('../src/gait3d.ts',import.meta.url),'utf8');
 const js=ts.transpileModule(code,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ES2022}}).outputText;
 const {solveLeg,advanceGait}=await import('data:text/javascript;base64,'+Buffer.from(js).toString('base64'));
-for(let phase=0;phase<Math.PI*4;phase+=.017)for(const side of ['L','R'])for(const blend of [0,.5,1]){
-  const p=solveLeg(phase,side,blend);
+for(let phase=0;phase<Math.PI*4;phase+=.017)for(const side of ['L','R'])for(const blend of [0,.5,1])for(const run of [0,.5,1]){
+  const p=solveLeg(phase,side,blend,run);
   assert.ok(Object.values(p).every(v=>typeof v!=='number'||Number.isFinite(v)));
   // Forward kinematics independently checks the requested foot placement.
   const y=.29*Math.cos(p.hip)+.265*Math.cos(p.hip+p.knee);

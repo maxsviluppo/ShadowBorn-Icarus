@@ -43,3 +43,6 @@ Il ramo `main` è collegato alla produzione. Vercel usa `npm ci`, esegue i test,
 ## Limiti della prova
 
 Una stanza e un enigma introduttivo, senza trama completa, combattimenti o salvataggio. I passi sono sintetizzati. La resa artistica resta iterabile dai sorgenti Blender; Unreal non è richiesto per questa versione web.
+
+### Aggiornamento 0.4.1
+Scena +10%; camminata +10% (0,715 m/s). Doppio clic per correre (1,35 m/s), con frenata progressiva anche prima delle curve e dei cambi di destinazione. Esc rallenta fino a fermarsi.

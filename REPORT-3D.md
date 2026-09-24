@@ -1,4 +1,4 @@
-# Conversione cartoon 3D — versione 0.4
+# Conversione cartoon 3D — versione 0.4.1
 
 ## Risultato
 
@@ -11,7 +11,9 @@ Il viaggiatore è una nuova interpretazione cartoon: capelli biondi, tunica verd
 ## Movimento e gioco
 
 - Rotazione continua sul posto prima di camminare, senza passaggi fra spritesheet.
-- Velocità massima 0,65 metri al secondo, accelerazione e frenata graduali.
+- Camminata 0,715 metri al secondo (+10%). Doppio clic per correre a 1,35 m/s; accelerazione e frenata graduali prima della destinazione e delle svolte strette. Nuove destinazioni ed Esc rallentano lungo il percorso sicuro prima di fermarsi.
+- Scena ingrandita uniformemente del 10%, senza deformare le proporzioni.
+- Corsa con falcata, braccia, inclinazione del busto e transizioni dedicate.
 - Ciclo delle gambe legato alla distanza percorsa, appoggio piantato e sollevamento del piede in avanzamento.
 - Cinematica inversa a due segmenti per le gambe, suole mantenute orizzontali.
 - Oscillazioni contenute di busto, testa, braccia e zaino; respiro in attesa.
@@ -32,3 +34,5 @@ La scena raggruppa i pezzi per materiale mantenendo i pivot: circa 78 chiamate d
 Aprire `art/Shadowborn-Cartoon.blend` in Blender. La timeline contiene un ciclo con appoggi derivati dallo stesso risolutore della versione web. `scripts/build-world.py` rigenera la scena; `scripts/animate-traveller.py` aggiorna il ciclo su una scena già aperta.
 
 Il percorso GitHub → Vercel usa il ramo main e test prima della build. La grafica del personaggio, i tempi delle pose e l'illuminazione potranno essere rifiniti dopo la valutazione dell'utente. Non sono stati aggiunti trama completa, combattimenti o nuove stanze; Unreal non è richiesto per questa prova web.
+
+Aggiornamento 0.4.1: test del motore di movimento a 24/30/60/120 Hz, limiti di velocità, frenata senza arresti bruschi, cambio percorso ed Esc.

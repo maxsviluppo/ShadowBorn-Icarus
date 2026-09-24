@@ -1,16 +1,16 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
-import {blocks,findPath,walkable,type UV} from './navigation';
+import {blocks,walkable,type UV} from './navigation';
 import {Footsteps} from './footsteps';
 import {solveLeg,advanceGait} from './gait3d';
+import {Locomotion3D,WALK_SPEED,RUN_SPEED} from './locomotion3d';
 
 const $=(id:string)=>document.getElementById(id)!;
 type Target='key'|'table'|'door'|'chest';
 const goals:Record<Target,UV>={key:{u:.74,v:.5},table:{u:.74,v:.5},door:{u:.43,v:.105},chest:{u:.60,v:.8}};
 const world=(p:UV)=>new THREE.Vector3((p.u-.5)*8,.075,(p.v-.5)*8);
 const uv=(v:THREE.Vector3):UV=>({u:v.x/8+.5,v:v.z/8+.5});
-const angleDelta=(a:number,b:number)=>Math.atan2(Math.sin(b-a),Math.cos(b-a));
 
 export async function startRoom3D(){
   const host=$('game-container');
@@ -59,9 +59,10 @@ export async function startRoom3D(){
   let routeLine:THREE.Line|null=null;
   const tooltip=document.createElement('div');tooltip.className='object-label';tooltip.hidden=true;host.append(tooltip);
   const footsteps=new Footsteps();
+  const motion=new Locomotion3D();
   let location:UV={u:.70,v:.79},path:UV[]=[],pending:Target|null=null,mode:'interact'|'examine'='interact';
   let hasKey=false,doorOpen=false,chestOpen=false,completed=false,debug=false,keySelected=false;
-  let speed=0,yaw=Math.PI/6,phase=0,blend=0,doorAngle=0,lidAngle=0,state='idle',elapsed=0,interacting=0;
+  let speed=0,yaw=Math.PI/6,phase=0,blend=0,runBlend=0,doorAngle=0,lidAngle=0,state='idle',elapsed=0,interacting=0,routeRevision=-1;
   const origin=new THREE.Vector3();
   const say=(s:string)=>{$('dialogue').textContent=`«${s}»`;};
   function sync(){
@@ -74,7 +75,7 @@ export async function startRoom3D(){
   function drawRoute(){if(routeLine){scene.remove(routeLine);routeLine.geometry.dispose();(routeLine.material as THREE.Material).dispose();routeLine=null;}
     if(path.length){routeLine=new THREE.Line(new THREE.BufferGeometry().setFromPoints([location,...path].map(p=>world(p).setY(.16))),new THREE.LineBasicMaterial({color:0xe9cb81}));scene.add(routeLine);routeLine.visible=debug;}}
   function toggleDebug(){debug=!debug;diagnostics.visible=debug;if(routeLine)routeLine.visible=debug;$('debug').setAttribute('aria-pressed',String(debug));$('debug').textContent=debug?'Nascondi percorsi':'Mostra percorsi';}
-  function cancel(){path=[];pending=null;speed=0;state='idle';marker.visible=false;drawRoute();}
+  function cancel(){pending=null;motion.stop();marker.visible=false;}
   function action(id:Target){
     tooltip.hidden=true;
     interacting=.65;
@@ -87,66 +88,64 @@ export async function startRoom3D(){
     else{completed=true;say('Fuori mi aspetta un’avventura. Spero si ricordi lei di me.');}
     sync();
   }
-  function request(target:UV,id:Target|null=null){if(completed)return;const found=findPath(location,target);if(!found){say('Di lì non passo. Proviamo un’altra strada.');return;}
-    pending=id;path=found;marker.position.copy(world(path[path.length-1])).setY(.15);marker.visible=true;drawRoute();}
+  function request(target:UV,id:Target|null=null,run=false){if(completed)return;if(!motion.go(target,run)){say('Di lì non passo. Proviamo un’altra strada.');return;}
+    pending=id;path=motion.path;marker.position.copy(world(target)).setY(.15);marker.visible=true;drawRoute();}
   function inspect(id:Target){const text={key:'Una piccola chiave di ottone. Per una piccola distrazione.',table:'Quercia robusta. Il custode prende molto sul serio le sue pause.',door:doorOpen?'La strada è libera. Posso uscire.':'Una porta di legno. La serratura sembra aspettare una chiave.',chest:'Un vecchio baule. Le sue cerniere hanno ancora qualcosa da dire.'};say(text[id]);}
   const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2(),floorPlane=new THREE.Plane(new THREE.Vector3(0,1,0),-.075);
   function pick(event:PointerEvent){const rect=renderer.domElement.getBoundingClientRect();pointer.set((event.clientX-rect.left)/rect.width*2-1,-(event.clientY-rect.top)/rect.height*2+1);raycaster.setFromCamera(pointer,camera);
     const hits=raycaster.intersectObjects(proxies.filter(p=>p.userData.id!=='key'||!hasKey));
     return hits[0]?.object.userData.id as Target|undefined;
   }
+  let lastTap={time:-1000,x:0,y:0};
   renderer.domElement.addEventListener('pointerdown',event=>{if(event.button!==0)return;void footsteps.unlock();const id=pick(event);if(completed)return;
-    if(id){if(mode==='examine'){cancel();inspect(id);}else request(goals[id],id);}
-    else if(raycaster.ray.intersectPlane(floorPlane,origin)){request(uv(origin));}
+    const run=event.timeStamp-lastTap.time<350&&Math.hypot(event.clientX-lastTap.x,event.clientY-lastTap.y)<20;
+    lastTap={time:event.timeStamp,x:event.clientX,y:event.clientY};
+    if(id){if(mode==='examine'){cancel();inspect(id);}else request(goals[id],id,run);}
+    else if(raycaster.ray.intersectPlane(floorPlane,origin)){request(uv(origin),null,run);}
   });
   renderer.domElement.addEventListener('pointermove',event=>{const id=pick(event);tooltip.hidden=!id||completed;renderer.domElement.style.cursor=id?'pointer':'default';if(id){tooltip.textContent=({key:'Chiave di ottone',table:'Tavolo del custode',door:doorOpen?'Esci dalla stanza':'Porta chiusa',chest:'Baule dimenticato'})[id];const r=host.getBoundingClientRect();tooltip.style.left=`${Math.max(90,Math.min(r.width-100,event.clientX-r.left))}px`;tooltip.style.top=`${Math.max(25,event.clientY-r.top-16)}px`;}});
   renderer.domElement.addEventListener('pointerleave',()=>tooltip.hidden=true);
   $('interact').onclick=()=>setMode('interact');$('examine').onclick=()=>setMode('examine');$('debug').onclick=toggleDebug;
   $('sound').onclick=()=>{footsteps.toggle();void footsteps.unlock();$('sound').textContent=footsteps.enabled?'Passi: attivi':'Passi: spenti';$('sound').setAttribute('aria-pressed',String(footsteps.enabled));};
   $('key-item').onclick=()=>{if(completed)return;keySelected=!keySelected;setMode('interact');say('La chiave è pronta. Ora la porta.');sync();};
-  function reset(){cancel();location={u:.70,v:.79};yaw=Math.PI/6;phase=0;blend=0;hasKey=doorOpen=chestOpen=completed=keySelected=false;interacting=0;setMode('interact');say('Dovevo ricordarmi qualcosa. Ah, sì. Uscire.');sync();}
+  function reset(){motion.reset();pending=null;location=motion.location;path=motion.path;speed=0;yaw=motion.yaw;phase=0;blend=0;runBlend=0;lastTap.time=-1000;hasKey=doorOpen=chestOpen=completed=keySelected=false;interacting=0;marker.visible=false;drawRoute();setMode('interact');say('Dovevo ricordarmi qualcosa. Ah, sì. Uscire.');sync();}
   $('reset').onclick=reset;
   window.addEventListener('keydown',e=>{if(e.key==='Escape'){cancel();say('Un momento. Stavo pensando.');}if(e.key.toLowerCase()==='d')toggleDebug();});
-  function resize(){const w=host.clientWidth,h=host.clientHeight;renderer.setSize(w,h);const aspect=w/h,span=Math.max(11.7,13.0/aspect);camera.left=-span*aspect/2;camera.right=span*aspect/2;camera.top=span/2;camera.bottom=-span/2;camera.updateProjectionMatrix();}
+  function resize(){const w=host.clientWidth,h=host.clientHeight;renderer.setSize(w,h);const aspect=w/h,span=Math.max(11.7,13.0/aspect)/1.10;camera.left=-span*aspect/2;camera.right=span*aspect/2;camera.top=span/2;camera.bottom=-span/2;camera.updateProjectionMatrix();}
   new ResizeObserver(resize).observe(host);resize();loading.remove();
   // Analytic two-link IK: soles follow a planted stance, then lift for the swing.
   // The cycle advances by travelled distance, so acceleration cannot make feet race.
   function pose(dt:number,moving:boolean){
-    blend=THREE.MathUtils.damp(blend,moving?1:0,7,dt);
-    joints.Body.position.y=-.105+Math.cos(phase*2)*.005*blend;
+    blend=THREE.MathUtils.damp(blend,moving?Math.min(1,speed/.25):0,7,dt);
+    runBlend=THREE.MathUtils.damp(runBlend,THREE.MathUtils.clamp((speed-WALK_SPEED)/(RUN_SPEED-WALK_SPEED),0,1),6,dt);
+    joints.Body.position.y=-.105-.04*runBlend+Math.cos(phase*2)*(.005+.015*runBlend)*blend;
     joints.Torso.rotation.z=Math.sin(phase)*.045*blend+Math.sin(elapsed*.9)*.008;
-    joints.Torso.rotation.x=.045*blend+Math.sin(elapsed*1.5)*.007;
+    joints.Torso.rotation.x=(.045+.14*runBlend)*blend+Math.sin(elapsed*1.5)*.007;
     joints.Head.rotation.y=Math.sin(elapsed*.8)*.05*(1-blend);
     joints.Head.rotation.z=-.045+Math.sin(phase-.3)*.025*blend;
-    joints.Backpack.rotation.x=Math.sin(phase-.6)*.035*blend;
+    joints.Backpack.rotation.x=Math.sin(phase-.6)*(.035+.04*runBlend)*blend;
     for(const side of ['L','R']){
-      const leg=solveLeg(phase,side as 'L'|'R',blend);
+      const leg=solveLeg(phase,side as 'L'|'R',blend,runBlend);
       joints['Leg'+side].rotation.x=leg.hip;joints['Shin'+side].rotation.x=leg.knee;joints['Foot'+side].rotation.x=leg.ankle;
-      joints['Arm'+side].rotation.x=-Math.sin(phase+(side==='L'?0:Math.PI)-.2)*.24*blend;
+      joints['Arm'+side].rotation.x=-Math.sin(phase+(side==='L'?0:Math.PI)-.2)*(.24+.20*runBlend)*blend;
       joints['Arm'+side].rotation.z=side==='L'?.06:-.06;
-      joints['Forearm'+side].rotation.x=-.08;
+      joints['Forearm'+side].rotation.x=-.08-.75*runBlend;
     }
     if(interacting>0){interacting=Math.max(0,interacting-dt);joints.ArmR.rotation.x=-.7*Math.sin(interacting/.65*Math.PI);}
   }
   let last=performance.now(),shadowFrame=0;
   function tick(now:number){requestAnimationFrame(tick);if(document.hidden||now-last<1000/30)return;const dt=Math.min((now-last)/1000,.10);last=now;elapsed+=dt;let moving=false;
-    // A repeated click at the interaction point must not turn toward atan2(0, 0).
-    while(path.length&&Math.hypot(path[0].u-location.u,path[0].v-location.v)*8<.015){location={...path.shift()!};drawRoute();}
-    if(path.length&&!completed){const target=path[0],dx=(target.u-location.u)*8,dz=(target.v-location.v)*8,d=Math.hypot(dx,dz),desired=Math.atan2(dx,dz),delta=angleDelta(yaw,desired);
-      yaw+=THREE.MathUtils.clamp(delta,-2.7*dt,2.7*dt);
-      if(Math.abs(delta)>.19){speed=0;state='turning';}
-      else{state='walking';let remaining=d;for(let i=1;i<path.length;i++)remaining+=Math.hypot(path[i].u-path[i-1].u,path[i].v-path[i-1].v)*8;
-        const goalSpeed=Math.min(.65,Math.sqrt(2*1.5*remaining));speed=THREE.MathUtils.damp(speed,goalSpeed,5,dt);const step=Math.min(speed*dt,d);
-        if(d>.00001){location={u:location.u+dx/d*step/8,v:location.v+dz/d*step/8};moving=step>.00001;const gait=advanceGait(phase,step);phase=gait.phase;footsteps.play(gait.contacts);}
-        if(d<.015||step>=d){location={...target};path.shift();drawRoute();}
-      }
-    }else if(pending){state='turning';const id=pending;const aim=id==='door'?new THREE.Vector3(-.56,0,-4):id==='chest'?new THREE.Vector3(-.4,0,2.32):new THREE.Vector3(.44,0,0),p=world(location);const delta=angleDelta(yaw,Math.atan2(aim.x-p.x,aim.z-p.z));yaw+=THREE.MathUtils.clamp(delta,-2.7*dt,2.7*dt);if(Math.abs(delta)<.04){pending=null;marker.visible=false;state='idle';speed=0;action(id);}}
-    else{state='idle';speed=0;marker.visible=false;}
+    const step=completed?0:motion.step(dt);location=motion.location;path=motion.path;speed=motion.speed;moving=step>.00001;
+    const gait=advanceGait(phase,step,runBlend);phase=gait.phase;footsteps.play(gait.contacts);
+    if(routeRevision!==motion.revision){routeRevision=motion.revision;drawRoute();}
+    if(motion.arrived&&pending){const id=pending;const aim=id==='door'?new THREE.Vector3(-.56,0,-4):id==='chest'?new THREE.Vector3(-.4,0,2.32):new THREE.Vector3(.44,0,0),p=world(location);if(motion.face(Math.atan2(aim.x-p.x,aim.z-p.z),dt)){pending=null;marker.visible=false;action(id);}}
+    else if(motion.arrived)marker.visible=false;
+    state=motion.state;yaw=motion.yaw;
     hero.position.copy(world(location));hero.rotation.y=yaw;pose(dt,moving);
     doorAngle=THREE.MathUtils.damp(doorAngle,doorOpen?1.48:0,3,dt);door.quaternion.copy(doorRest).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),doorAngle));
     lidAngle=THREE.MathUtils.damp(lidAngle,chestOpen?-1.25:0,4,dt);lid.quaternion.copy(lidRest).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),lidAngle));
-    if(debug){host.dataset.motion=state;host.dataset.u=location.u.toFixed(5);host.dataset.v=location.v.toFixed(5);host.dataset.steps=String(footsteps.played);host.dataset.drawCalls=String(renderer.info.render.calls);host.dataset.triangles=String(renderer.info.render.triangles);}
-    const statusText=completed?'Prova completata':state==='walking'?'Un passo alla volta':state==='turning'?'Cambio direzione':'In esplorazione';
+    if(debug){host.dataset.motion=state;host.dataset.speed=speed.toFixed(4);host.dataset.run=String(motion.running);host.dataset.u=location.u.toFixed(5);host.dataset.v=location.v.toFixed(5);host.dataset.steps=String(footsteps.played);host.dataset.drawCalls=String(renderer.info.render.calls);host.dataset.triangles=String(renderer.info.render.triangles);}
+    const statusText=completed?'Prova completata':state==='running'?'Di corsa, con giudizio':state==='braking'?'Rallento…':state==='walking'?'Un passo alla volta':state==='turning'?'Cambio direzione':'In esplorazione';
     if($('status').textContent!==statusText)$('status').textContent=statusText;
     if(++shadowFrame%3===0)renderer.shadowMap.needsUpdate=true;
     renderer.render(scene,camera);
