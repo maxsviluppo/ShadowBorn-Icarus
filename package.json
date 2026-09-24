@@ -1,18 +1,20 @@
 {
   "name": "shadowborn-room-test",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 127.0.0.1 --port 4173",
-    "test": "node tests/navigation.mjs && node tests/character-motion.mjs && node tests/footsteps.mjs"
+    "test": "node tests/navigation.mjs && node tests/character-motion.mjs && node tests/footsteps.mjs && node tests/gait3d.mjs"
   },
   "dependencies": {
-    "phaser": "^3.87.0"
+    "phaser": "^3.87.0",
+    "three": "^0.186.0"
   },
   "devDependencies": {
+    "@types/three": "^0.186.0",
     "sharp": "^0.35.2",
     "typescript": "^5.8.2",
     "vite": "^6.2.0"
