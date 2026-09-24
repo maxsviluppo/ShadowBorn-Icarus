@@ -4,6 +4,8 @@ import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {blocks,walkable,type UV} from './navigation';
 import {Footsteps} from './footsteps';
 import {solveLeg,advanceGait} from './gait3d';
+import {RoomAudio} from './roomAudio';
+import {PropMotion,type PropKind} from './propMotion';
 import {Locomotion3D,WALK_SPEED,RUN_SPEED} from './locomotion3d';
 
 const $=(id:string)=>document.getElementById(id)!;
@@ -60,9 +62,12 @@ export async function startRoom3D(){
   for(const b of blocks){const shape=new THREE.EdgesGeometry(new THREE.BoxGeometry(b.w*8,.06,b.h*8));const line=new THREE.LineSegments(shape,new THREE.LineBasicMaterial({color:0xeac37d}));line.position.copy(world({u:b.u+b.w/2,v:b.v+b.h/2}));line.position.y=.16;diagnostics.add(line);}
   let routeLine:THREE.Line|null=null;
   const tooltip=document.createElement('div');tooltip.className='object-label';tooltip.hidden=true;host.append(tooltip);
-  const footsteps=new Footsteps();
+  const footsteps=new Footsteps(),audio=new RoomAudio();
+  const props={book:new PropMotion('book'),chest:new PropMotion('chest'),cabinet:new PropMotion('cabinet'),door:new PropMotion('door')};
+  const animateProp=(kind:PropKind,open:boolean)=>{const duration=props[kind].set(open);if(duration>0)audio.play(kind,open,duration);};
   const motion=new Locomotion3D();
   let location:UV={u:.70,v:.79},path:UV[]=[],pending:Target|null=null,mode:'interact'|'examine'|'open'|'close'='interact';
+  let doorUnlocked=false,unlockRemaining=0;
   let hasKey=false,doorOpen=false,chestOpen=false,bookOpen=false,cabinetOpen=false,completed=false,debug=false,keySelected=false;
   let speed=0,yaw=Math.PI/6,phase=0,blend=0,runBlend=0,doorAngle=0,lidAngle=0,bookAngle=0,cabinetAngle=0,state='idle',elapsed=0,interacting=0,routeRevision=-1;
   const origin=new THREE.Vector3();
@@ -77,10 +82,11 @@ export async function startRoom3D(){
   function drawRoute(){if(routeLine){scene.remove(routeLine);routeLine.geometry.dispose();(routeLine.material as THREE.Material).dispose();routeLine=null;}
     if(path.length){routeLine=new THREE.Line(new THREE.BufferGeometry().setFromPoints([location,...path].map(p=>world(p).setY(.16))),new THREE.LineBasicMaterial({color:0xe9cb81}));scene.add(routeLine);routeLine.visible=debug;}}
   function toggleDebug(){debug=!debug;diagnostics.visible=debug;if(routeLine)routeLine.visible=debug;$('debug').setAttribute('aria-pressed',String(debug));$('debug').textContent=debug?'Nascondi percorsi':'Mostra percorsi';}
-  function cancel(){pending=null;motion.stop();marker.visible=false;}
+  function cancel(){unlockRemaining=0;audio.stop('lock');pending=null;motion.stop();marker.visible=false;}
   function action(id:Target){
     tooltip.hidden=true;
     interacting=.65;
+    const before={book:bookOpen,chest:chestOpen,cabinet:cabinetOpen,door:doorOpen};
     const desired=(current:boolean)=>mode==='open'?true:mode==='close'?false:!current;
     if(id==='key'){
       if(mode==='open'||mode==='close'){say('Questa chiave si raccoglie. Potrà aprire la porta.');return;}
@@ -88,14 +94,19 @@ export async function startRoom3D(){
     }else if(id==='table'){bookOpen=desired(bookOpen);say(bookOpen?'Il registro del custode. Qui annota tutto... tranne dove lascia le chiavi.':'Richiudo il libro. I segreti possono aspettare.');}
     else if(id==='cabinet'){cabinetOpen=desired(cabinetOpen);say(cabinetOpen?'Tazze di riserva. Il custode è pronto a qualsiasi visita.':'Ante chiuse. Le candele restano al loro posto.');}
     else if(id==='chest'){chestOpen=desired(chestOpen);say(chestOpen?'Solo una coperta. E un calzino che non riconosco.':'Meglio richiudere. Il calzino sembrava infastidito.');}
-    else if(mode==='close'){doorOpen=false;say('Richiudo la porta. Ancora un momento qui dentro.');}
+    else if(mode==='close'){unlockRemaining=0;audio.stop('lock');doorOpen=false;say('Richiudo la porta. Ancora un momento qui dentro.');}
     else if(!hasKey){say('Chiusa. Potrei bussare... ma sono già dentro.');}
-    else if(!doorOpen){doorOpen=true;keySelected=false;say('Ecco. Una serratura ragionevole. Interagisco ancora per uscire.');}
+    else if(!doorOpen){
+      if(unlockRemaining>0)return;
+      if(!doorUnlocked){unlockRemaining=1.1;audio.play('lock',true,1.1);say('La chiave gira nella serratura...');}
+      else{doorOpen=true;keySelected=false;say('La porta si apre. Posso uscire.');}
+    }
     else if(mode==='open'){say('La porta è gi... aperta. Posso uscire con Interagisci.');}
     else{completed=true;say('Fuori mi aspetta una nuova avventura. Spero si ricordi lei di me.');}
+    for(const [kind,open] of Object.entries({book:bookOpen,chest:chestOpen,cabinet:cabinetOpen,door:doorOpen}))if(before[kind as PropKind]!==open)animateProp(kind as PropKind,open);
     sync();
   }
-  function request(target:UV,id:Target|null=null,run=false){if(completed)return;if(!motion.go(target,run)){say('Di lì non passo. Proviamo un’altra strada.');return;}
+  function request(target:UV,id:Target|null=null,run=false){if(completed)return;if(id!=='door'&&unlockRemaining>0){unlockRemaining=0;audio.stop('lock');}if(!motion.go(target,run)){say('Di lì non passo. Proviamo un’altra strada.');return;}
     pending=id;path=motion.path;marker.position.copy(world(target)).setY(.15);marker.visible=true;drawRoute();}
   function inspect(id:Target){const text={key:'Una piccola chiave di ottone. Per una piccola distrazione.',table:'Un registro rilegato. Posso aprirlo e richiuderlo.',cabinet:'Un mobile con due ante, sotto le candele.',door:doorOpen?'La strada è libera. Posso uscire.':'Una porta di legno. La serratura sembra aspettare una chiave.',chest:'Un vecchio baule. Le sue cerniere hanno ancora qualcosa da dire.'};say(text[id]);}
   const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2(),floorPlane=new THREE.Plane(new THREE.Vector3(0,1,0),-.075);
@@ -104,7 +115,7 @@ export async function startRoom3D(){
     return hits[0]?.object.userData.id as Target|undefined;
   }
   let lastTap={time:-1000,x:0,y:0};
-  renderer.domElement.addEventListener('pointerdown',event=>{if(event.button!==0)return;void footsteps.unlock();const id=pick(event);if(completed)return;
+  renderer.domElement.addEventListener('pointerdown',event=>{if(event.button!==0)return;void footsteps.unlock();void audio.unlock();host.dataset.audioStarted='true';const id=pick(event);if(completed)return;
     const run=event.timeStamp-lastTap.time<350&&Math.hypot(event.clientX-lastTap.x,event.clientY-lastTap.y)<20;
     lastTap={time:event.timeStamp,x:event.clientX,y:event.clientY};
     if(run&&interacting>.35)return;
@@ -114,9 +125,11 @@ export async function startRoom3D(){
   renderer.domElement.addEventListener('pointermove',event=>{const id=pick(event);tooltip.hidden=!id||completed;renderer.domElement.style.cursor=id?'pointer':'default';if(id){tooltip.textContent=({key:'Chiave di ottone',table:bookOpen?'Chiudi il libro':'Apri il libro',cabinet:cabinetOpen?'Chiudi le ante':'Apri le ante',door:doorOpen?'Esci dalla stanza':'Porta chiusa',chest:chestOpen?'Chiudi il baule':'Apri il baule'})[id];const r=host.getBoundingClientRect();tooltip.style.left=`${Math.max(90,Math.min(r.width-100,event.clientX-r.left))}px`;tooltip.style.top=`${Math.max(25,event.clientY-r.top-16)}px`;}});
   renderer.domElement.addEventListener('pointerleave',()=>tooltip.hidden=true);
   $('interact').onclick=()=>setMode('interact');$('examine').onclick=()=>setMode('examine');$('debug').onclick=toggleDebug;$('open').onclick=()=>setMode('open');$('close').onclick=()=>setMode('close');
-  $('sound').onclick=()=>{footsteps.toggle();void footsteps.unlock();$('sound').textContent=footsteps.enabled?'Passi: attivi':'Passi: spenti';$('sound').setAttribute('aria-pressed',String(footsteps.enabled));};
+  $('sound').onclick=()=>{footsteps.toggle();audio.setEnabled(footsteps.enabled);void footsteps.unlock();$('sound').textContent=footsteps.enabled?'Audio: attivo':'Audio: spento';$('sound').setAttribute('aria-pressed',String(footsteps.enabled));};
+  $('music').onclick=()=>{const on=audio.toggleMusic();$('music').textContent=on?'Musica: attiva':'Musica: spenta';$('music').setAttribute('aria-pressed',String(on));};
+  document.addEventListener('visibilitychange',()=>{last=performance.now();if(document.hidden)audio.pause();else if(host.dataset.audioStarted==='true')void audio.unlock();});
   $('key-item').onclick=()=>{if(completed)return;keySelected=!keySelected;setMode('interact');say('La chiave è pronta. Ora la porta.');sync();};
-  function reset(){motion.reset();pending=null;location=motion.location;path=motion.path;speed=0;yaw=motion.yaw;phase=0;blend=0;runBlend=0;lastTap.time=-1000;hasKey=doorOpen=chestOpen=bookOpen=cabinetOpen=completed=keySelected=false;interacting=0;marker.visible=false;drawRoute();setMode('interact');say('Dovevo ricordarmi qualcosa. Ah, sì. Uscire.');sync();}
+  function reset(){doorUnlocked=false;unlockRemaining=0;audio.stopAll();Object.values(props).forEach(p=>p.reset());motion.reset();pending=null;location=motion.location;path=motion.path;speed=0;yaw=motion.yaw;phase=0;blend=0;runBlend=0;lastTap.time=-1000;hasKey=doorOpen=chestOpen=bookOpen=cabinetOpen=completed=keySelected=false;interacting=0;marker.visible=false;drawRoute();setMode('interact');say('Dovevo ricordarmi qualcosa. Ah, sì. Uscire.');sync();}
   $('reset').onclick=reset;
   window.addEventListener('keydown',e=>{if(e.key==='Escape'){cancel();say('Un momento. Stavo pensando.');}if(e.key.toLowerCase()==='d')toggleDebug();});
   function resize(){const w=host.clientWidth,h=host.clientHeight;renderer.setSize(w,h);const aspect=w/h,span=Math.max(11.7,13.0/aspect)/1.10;camera.left=-span*aspect/2;camera.right=span*aspect/2;camera.top=span/2;camera.bottom=-span/2;camera.updateProjectionMatrix();}
@@ -142,7 +155,7 @@ export async function startRoom3D(){
     if(interacting>0){interacting=Math.max(0,interacting-dt);joints.ArmR.rotation.x=-.7*Math.sin(interacting/.65*Math.PI);}
   }
   let last=performance.now(),shadowFrame=0;
-  function tick(now:number){requestAnimationFrame(tick);if(document.hidden||now-last<1000/30)return;const dt=Math.min((now-last)/1000,.10);last=now;elapsed+=dt;let moving=false;
+  function tick(now:number){requestAnimationFrame(tick);if(document.hidden||now-last<1000/30)return;const animationDt=(now-last)/1000,dt=Math.min(animationDt,.10);last=now;elapsed+=dt;let moving=false;
     const step=completed?0:motion.step(dt);location=motion.location;path=motion.path;speed=motion.speed;moving=step>.00001;
     const gait=advanceGait(phase,step,runBlend);phase=gait.phase;footsteps.play(gait.contacts);
     if(routeRevision!==motion.revision){routeRevision=motion.revision;drawRoute();}
@@ -150,12 +163,14 @@ export async function startRoom3D(){
     else if(motion.arrived)marker.visible=false;
     state=motion.state;yaw=motion.yaw;
     hero.position.copy(world(location));hero.rotation.y=yaw;pose(dt,moving);
-    doorAngle=THREE.MathUtils.damp(doorAngle,doorOpen?1.48:0,3,dt);door.quaternion.copy(doorRest).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),doorAngle));
-    lidAngle=THREE.MathUtils.damp(lidAngle,chestOpen?-1.25:0,4,dt);lid.quaternion.copy(lidRest).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),lidAngle));
-    bookAngle=THREE.MathUtils.damp(bookAngle,bookOpen?2.85:0,5,dt);bookCover.quaternion.copy(bookRest).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1),bookAngle));
-    cabinetAngle=THREE.MathUtils.damp(cabinetAngle,cabinetOpen?1.65:0,4,dt);
+    if(unlockRemaining>0){unlockRemaining=Math.max(0,unlockRemaining-animationDt);if(unlockRemaining===0){doorUnlocked=true;doorOpen=true;keySelected=false;animateProp('door',true);say('Serratura aperta. Ora posso uscire.');sync();}}
+    doorAngle=props.door.step(animationDt)*1.48;door.quaternion.copy(doorRest).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),doorAngle));
+    lidAngle=props.chest.step(animationDt)*-1.25;lid.quaternion.copy(lidRest).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),lidAngle));
+    bookAngle=props.book.step(animationDt)*2.85;bookCover.quaternion.copy(bookRest).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1),bookAngle));
+    cabinetAngle=props.cabinet.step(animationDt)*1.65;
     cabinetLeft.quaternion.copy(leftRest).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),-cabinetAngle));
     cabinetRight.quaternion.copy(rightRest).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),cabinetAngle));
+    host.dataset.musicPlaying=String(audio.musicPlaying);host.dataset.audioReady=String(audio.ready);host.dataset.sfx=String(audio.played);host.dataset.lastSound=audio.last;host.dataset.sampledSteps=String(footsteps.sampled);
     host.dataset.book=String(bookOpen);host.dataset.cabinet=String(cabinetOpen);host.dataset.chest=String(chestOpen);
     if(debug){host.dataset.motion=state;host.dataset.speed=speed.toFixed(4);host.dataset.run=String(motion.running);host.dataset.u=location.u.toFixed(5);host.dataset.v=location.v.toFixed(5);host.dataset.steps=String(footsteps.played);host.dataset.drawCalls=String(renderer.info.render.calls);host.dataset.triangles=String(renderer.info.render.triangles);}
     const statusText=completed?'Prova completata':state==='running'?'Di corsa, con giudizio':state==='braking'?'Rallento…':state==='walking'?'Un passo alla volta':state==='turning'?'Cambio direzione':'In esplorazione';

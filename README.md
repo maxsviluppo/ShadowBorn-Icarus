@@ -49,3 +49,6 @@ Scena +10%; camminata +10% (0,715 m/s). Doppio clic per correre (1,35 m/s), con 
 
 ### Aggiornamento 0.5.0
 Camminata 1,43 m/s e corsa 2,70 m/s, con accelerazione e frenata adattate. Apri/Chiudi o clic diretto su libro, baule e mobile delle candele. Copertina e ante sono modellate e incernierate in Blender. La chiave si raccoglie cliccandola direttamente; il tavolo apre il libro.
+
+### Audio 0.6
+Musica Gemini e campioni forniti dall'utente sincronizzati a passi, libro, baule, mobile, porta e serratura. Dettagli e provenienza in AUDIO.md.

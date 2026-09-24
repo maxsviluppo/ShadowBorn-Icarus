@@ -25,12 +25,14 @@ export class Footsteps{
   private sequence=0;
   private active=new Set<AudioBufferSourceNode>();
   played=0;
+  sampled=false;
   async unlock(){
     try{
       if(!this.context){
         this.context=new AudioContext({latencyHint:'interactive'});
         this.gain=this.context.createGain();this.gain.gain.value=.50;this.gain.connect(this.context.destination);
         this.buffers=Array.from({length:4},(_,i)=>{const samples=stoneStepSamples(this.context!.sampleRate,i),buffer=this.context!.createBuffer(1,samples.length,this.context!.sampleRate);buffer.getChannelData(0).set(samples);return buffer;});
+        void Promise.all(Array.from({length:4},async(_,i)=>{const r=await fetch('/assets/audio/step-'+i+'.wav');if(!r.ok)throw Error('step');return this.context!.decodeAudioData(await r.arrayBuffer());})).then(buffers=>{this.buffers=buffers;this.sampled=true;}).catch(()=>{});
       }
       if(this.context.state==='suspended')await this.context.resume();
     }catch{this.enabled=false;}

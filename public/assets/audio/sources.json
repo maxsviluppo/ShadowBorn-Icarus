@@ -1,0 +1,135 @@
+{
+  "effects": "User supplied recordings; cabinet adapted from door. Closing cues derived from final source impacts.",
+  "clips": [
+    {
+      "file": "step-0.wav",
+      "source": "passi_interni_pietra.mp3",
+      "source_segment": [
+        0.27,
+        0.5
+      ],
+      "seconds": 0.23,
+      "adaptation": "pitch-preserving time stretch"
+    },
+    {
+      "file": "step-1.wav",
+      "source": "passi_interni_pietra.mp3",
+      "source_segment": [
+        0.94,
+        1.2
+      ],
+      "seconds": 0.23,
+      "adaptation": "pitch-preserving time stretch"
+    },
+    {
+      "file": "step-2.wav",
+      "source": "passi_interni_pietra.mp3",
+      "source_segment": [
+        2.57,
+        2.9
+      ],
+      "seconds": 0.23,
+      "adaptation": "pitch-preserving time stretch"
+    },
+    {
+      "file": "step-3.wav",
+      "source": "passi_interni_pietra.mp3",
+      "source_segment": [
+        3.64,
+        3.94
+      ],
+      "seconds": 0.23,
+      "adaptation": "pitch-preserving time stretch"
+    },
+    {
+      "file": "book-open.wav",
+      "source": "apri libro.mp3",
+      "source_segment": [
+        0.02,
+        0.85
+      ],
+      "seconds": 0.9,
+      "adaptation": "pitch-preserving time stretch"
+    },
+    {
+      "file": "book-close.wav",
+      "source": "apri libro.mp3",
+      "source_segment": [
+        0.98,
+        1.228
+      ],
+      "seconds": 0.7,
+      "adaptation": "closing impact extracted from supplied opening recording"
+    },
+    {
+      "file": "chest-open.wav",
+      "source": "apertura baule.mp3",
+      "source_segment": [
+        0.1,
+        1.65
+      ],
+      "seconds": 1.2,
+      "adaptation": "pitch-preserving time stretch"
+    },
+    {
+      "file": "chest-close.wav",
+      "source": "apertura baule.mp3",
+      "source_segment": [
+        2.38,
+        3.1
+      ],
+      "seconds": 1.0,
+      "adaptation": "closing impact extracted from supplied opening recording"
+    },
+    {
+      "file": "door-open.wav",
+      "source": "apertura porta.mp3",
+      "source_segment": [
+        0.015,
+        1.3
+      ],
+      "seconds": 1.5,
+      "adaptation": "pitch-preserving time stretch"
+    },
+    {
+      "file": "door-close.wav",
+      "source": "apertura porta.mp3",
+      "source_segment": [
+        1.36,
+        1.968
+      ],
+      "seconds": 1.3,
+      "adaptation": "closing impact extracted from supplied opening recording"
+    },
+    {
+      "file": "cabinet-open.wav",
+      "source": "apertura porta.mp3",
+      "source_segment": [
+        0.03,
+        0.65
+      ],
+      "seconds": 0.9,
+      "adaptation": "pitch-preserving time stretch"
+    },
+    {
+      "file": "cabinet-close.wav",
+      "source": "apertura porta.mp3",
+      "source_segment": [
+        1.64,
+        1.968
+      ],
+      "seconds": 0.8,
+      "adaptation": "closing impact extracted from supplied opening recording"
+    },
+    {
+      "file": "lock-open.wav",
+      "source": "chiave apre porta.mp3",
+      "source_segment": [
+        0.1,
+        1.72
+      ],
+      "seconds": 1.1,
+      "adaptation": "pitch-preserving time stretch"
+    }
+  ]
+}
