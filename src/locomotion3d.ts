@@ -1,8 +1,8 @@
 import {findPath,type UV} from './navigation';
 
-export const WALK_SPEED=.65*1.10;
-export const RUN_SPEED=1.35;
-const ACCEL=1.65,BRAKE=2.4,JERK=12,EPS=.001;
+export const WALK_SPEED=.65*1.10*2;
+export const RUN_SPEED=1.35*2;
+const ACCEL=3.3,BRAKE=4.8,JERK=24,EPS=.001;
 const clamp=(n:number,a:number,b:number)=>Math.max(a,Math.min(b,n));
 const distance=(a:UV,b:UV)=>Math.hypot(a.u-b.u,a.v-b.v)*8;
 const heading=(a:UV,b:UV)=>Math.atan2(b.u-a.u,b.v-a.v);

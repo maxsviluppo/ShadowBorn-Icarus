@@ -123,9 +123,16 @@ for x in [-.89,.89]:box('Table side apron',(x,0,.87),(.09,1.25,.22),wood,table)
 for i in range(10):
     y=random.uniform(-.58,.58);x=random.uniform(-.6,.6)
     box('Oak grain',(x,y,1.135),(random.uniform(.14,.5),.008,.003),darkwood,table,.002)
-sheet=box('Letter',(-.42,.16,1.144),(.63,.47,.014),paper,table,.006);sheet.rotation_euler.z=.12
-for i in range(4):box('Handwriting',(-.44,.02+i*.075,1.157),(.39-i*.025,.014,.003),ink,table,.002)
-cyl('Wax seal',(-.19,-.01,1.161),.056,.014,wine,table)
+# Hinged ledger: cover opens around its spine, revealing inked pages.
+book=empty('Ledger',(-.12,.16,1.15),table)
+box('Ledger back cover',(.25,0,.018),(.56,.62,.036),blue,book,.01)
+box('Ledger pages',(.25,0,.072),(.51,.57,.075),paper,book,.009)
+for i in range(6):box('Ledger page edge',(.511,0,.042+i*.01),(.003,.54,.002),ink,book,.001)
+for i in range(6):box('Ledger handwriting',(.25,-.21+i*.075,.112),(.35-(i%3)*.04,.012,.003),ink,book,.001)
+book_cover=empty('BookCover',(0,0,.12),book)
+box('Ledger front cover',(.25,0,0),(.56,.62,.035),blue,book_cover,.01)
+box('Ledger cover label',(.25,0,.022),(.26,.32,.008),gold,book_cover,.008)
+box('Ledger spine',(0,0,.06),(.045,.63,.13),blue,book,.01)
 key=empty('BrassKey',(.45,-.22,1.17),table)
 torus('Key bow',(0,0,0),.092,.023,gold,key)
 beam('Key shaft',(.075,0,0),(.33,0,0),.02,gold,key)
@@ -156,11 +163,19 @@ for i in range(3):box('Stacked folio',(-.5,.05,1.05+i*.065),(.49,.40,.055),[blue
 cyl('Ink pot',(.38,-.15,1.08),.095,.16,iron,desk)
 beam('Quill',(.38,-.15,1.14),(.52,-.1,1.52),.015,paper,desk)
 cabinet=empty('Cabinet',(1.4,3.3,0),room)
-box('Cupboard body',(0,0,.48),(1.12,1.1,.90),darkwood,cabinet)
-for x in [-.275,.275]:
-    box('Cupboard panel',(x,-.56,.48),(.50,.08,.74),wood,cabinet)
-    box('Panel inset',(x,-.61,.48),(.37,.04,.56),lightwood,cabinet)
-    sphere('Cupboard knob',(x*.25,-.65,.5),(.035,.045,.035),gold,cabinet)
+# Hollow cabinet with separately hinged front doors and visible shelves.
+box('Cupboard back',(0,.5,.48),(1.12,.1,.90),darkwood,cabinet)
+for x in [-.51,.51]:box('Cupboard side',(x,0,.48),(.10,1.1,.90),wood,cabinet)
+for z in [.08,.48,.91]:box('Cupboard shelf',(0,0,z),(1.02,1.08,.07),darkwood,cabinet)
+for x in [-.28,.05,.3]:cyl('Stored cup',(x,-.12,.60),.07,.17,paper,cabinet)
+cabinet_doors=[]
+for side in [-1,1]:
+    hinge=empty('CabinetLeft' if side<0 else 'CabinetRight',(side*.53,-.56,.48),cabinet)
+    cabinet_doors.append(hinge)
+    x=-side*.255
+    box('Cupboard panel',(x,0,0),(.50,.08,.74),wood,hinge)
+    box('Panel inset',(x,-.05,0),(.37,.04,.56),lightwood,hinge)
+    sphere('Cupboard knob',(-side*.45,-.09,.02),(.035,.045,.035),gold,hinge)
 box('Cupboard cornice',(0,0,.99),(1.21,1.19,.13),wood,cabinet)
 # Candles and plants occupy existing navigation obstacles.
 def candles(name,x,y,z=0,tall=True):
@@ -178,7 +193,7 @@ candles('Desk candles',-2.25,2.50,.99,False)
 candles('Cupboard candles',1.48,3.23,1.06,False)
 candles('Rear candlestick',2.60,3.54,0,True)
 # Batch static geometry by material to reduce draw calls on the integrated GPU.
-dynamic={door,lid,key}
+dynamic={door,lid,key,book_cover,*cabinet_doors}
 def animated_parent(o):
     while o:
         if o in dynamic:return True

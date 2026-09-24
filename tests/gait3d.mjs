@@ -20,7 +20,7 @@ assert.equal(advanceGait(2,-1).phase,2);
 function glbJson(buffer){assert.equal(buffer.readUInt32LE(0),0x46546c67);return JSON.parse(buffer.subarray(20,20+buffer.readUInt32LE(12)).toString());}
 const room=glbJson(await fs.readFile(new URL('../public/assets/3d/custodian-room.glb',import.meta.url)));
 const hero=glbJson(await fs.readFile(new URL('../public/assets/3d/traveller.glb',import.meta.url)));
-for(const name of ['DoorHinge','ChestLid','BrassKey'])assert.ok(room.nodes.some(n=>n.name===name),name);
+for(const name of ['DoorHinge','ChestLid','BrassKey','BookCover','CabinetLeft','CabinetRight'])assert.ok(room.nodes.some(n=>n.name===name),name);
 for(const name of ['Body','Torso','Head','Backpack','ArmL','ArmR','ForearmL','ForearmR','LegL','LegR','ShinL','ShinR','FootL','FootR'])assert.ok(hero.nodes.some(n=>n.name===name),name);
 assert.ok(hero.animations.length>0,'Blender source walk exported');
 console.log('PASS: 3D leg IK, planted stance, level soles, 24/30/60/120 Hz contact timing, GLB joints and source animation.');

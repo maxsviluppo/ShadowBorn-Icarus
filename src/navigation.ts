@@ -6,7 +6,7 @@ export const RADIUS = .026;
 export const blocks: Block[] = [
   { id: 'table', u: .43, v: .41, w: .25, h: .18 },
   { id: 'back-table', u: .035, v: .125, w: .24, h: .13 },
-  { id: 'cabinet', u: .60, v: .015, w: .15, h: .15 },
+  { id: 'cabinet', u: .60, v: .015, w: .15, h: .23 },
   { id: 'front-candle', u: .90, v: .52, w: .075, h: .075 },
   { id: 'left-candle', u: .04, v: .84, w: .07, h: .095 },
   { id: 'right-candle', u: .80, v: .015, w: .055, h: .07 },

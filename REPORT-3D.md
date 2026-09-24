@@ -36,3 +36,6 @@ Aprire `art/Shadowborn-Cartoon.blend` in Blender. La timeline contiene un ciclo 
 Il percorso GitHub → Vercel usa il ramo main e test prima della build. La grafica del personaggio, i tempi delle pose e l'illuminazione potranno essere rifiniti dopo la valutazione dell'utente. Non sono stati aggiunti trama completa, combattimenti o nuove stanze; Unreal non è richiesto per questa prova web.
 
 Aggiornamento 0.4.1: test del motore di movimento a 24/30/60/120 Hz, limiti di velocità, frenata senza arresti bruschi, cambio percorso ed Esc.
+
+## Aggiornamento 0.5.0
+Velocità raddoppiate rispetto alla 0.4.1: camminata 1,43 m/s, corsa 2,70 m/s. Accelerazione e frenata adeguate. Libro centrale con copertina mobile e pagine scritte; mobile delle candele con ante indipendenti, ripiani e tazze interne. Comandi Apri e Chiudi espliciti, oppure clic per alternare. Chiave raccolta con clic diretto. Anche la porta può essere richiusa.

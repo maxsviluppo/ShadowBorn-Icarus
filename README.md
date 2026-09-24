@@ -46,3 +46,6 @@ Una stanza e un enigma introduttivo, senza trama completa, combattimenti o salva
 
 ### Aggiornamento 0.4.1
 Scena +10%; camminata +10% (0,715 m/s). Doppio clic per correre (1,35 m/s), con frenata progressiva anche prima delle curve e dei cambi di destinazione. Esc rallenta fino a fermarsi.
+
+### Aggiornamento 0.5.0
+Camminata 1,43 m/s e corsa 2,70 m/s, con accelerazione e frenata adattate. Apri/Chiudi o clic diretto su libro, baule e mobile delle candele. Copertina e ante sono modellate e incernierate in Blender. La chiave si raccoglie cliccandola direttamente; il tavolo apre il libro.
