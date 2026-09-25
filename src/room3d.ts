@@ -162,6 +162,7 @@ export async function startRoom3D(){
     if(motion.arrived&&pending){const id=pending;const aim=id==='door'?new THREE.Vector3(-.56,0,-4):id==='cabinet'?new THREE.Vector3(1.4,0,-3.3):id==='chest'?new THREE.Vector3(-.4,0,2.32):new THREE.Vector3(.44,0,0),p=world(location);if(motion.face(Math.atan2(aim.x-p.x,aim.z-p.z),dt)){pending=null;marker.visible=false;action(id);}}
     else if(motion.arrived)marker.visible=false;
     state=motion.state;yaw=motion.yaw;
+    $('map-player').setAttribute('cx',String(location.u*100));$('map-player').setAttribute('cy',String(location.v*100));
     hero.position.copy(world(location));hero.rotation.y=yaw;pose(dt,moving);
     if(unlockRemaining>0){unlockRemaining=Math.max(0,unlockRemaining-animationDt);if(unlockRemaining===0){doorUnlocked=true;doorOpen=true;keySelected=false;animateProp('door',true);say('Serratura aperta. Ora posso uscire.');sync();}}
     doorAngle=props.door.step(animationDt)*1.48;door.quaternion.copy(doorRest).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),doorAngle));

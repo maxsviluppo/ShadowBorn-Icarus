@@ -1,9 +1,46 @@
 <!doctype html>
-<html lang="it"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Shadowborn · Una piccola distrazione</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%23232923'/%3E%3Ctext x='10' y='29' font-size='28' fill='%23d8bc80'%3ES%3C/text%3E%3C/svg%3E"></head>
-<body><div class="shell">
-<header><div class="brand"><span class="sigil">S</span><div><span class="eyebrow">SHADOWBORN · DIORAMA 3D · PROVA GIOCABILE</span><h1>Una piccola distrazione</h1></div></div><button id="reset" class="quiet">Ricomincia ↺</button></header>
-<main><section class="room-panel" aria-label="Stanza interattiva"><div class="room-top"><span><i class="dot"></i> LA STANZA DEL CUSTODE</span><div class="room-controls"><button id="sound" class="quiet" aria-pressed="true" title="Attiva o disattiva tutti i suoni">Audio: attivo</button><button id="music" class="quiet" aria-pressed="true">Musica: attiva</button><button id="debug" class="quiet" aria-pressed="false">Mostra percorsi</button></div></div><div id="game-container" role="application" aria-label="Clicca sul pavimento per camminare, sugli oggetti per interagire"></div><div class="subtitle"><span id="speaker">IL VIAGGIATORE</span><p id="dialogue" aria-live="polite">«Dovevo ricordarmi qualcosa. Ah, sì. Uscire.»</p></div></section>
-<aside><span class="eyebrow">IL TUO TACCUINO</span><h2>Un passo<br>alla volta.</h2><p class="intro">Una stanza, una porta chiusa e nessuna fretta.</p><div class="rule"></div><span class="eyebrow">PICCOLE COSE DA FARE</span><ol><li id="goal-key"><span>01</span>Trovare la chiave</li><li id="goal-door"><span>02</span>Aprire la porta</li><li id="goal-exit"><span>03</span>Uscire dalla stanza</li></ol><div id="finish" hidden><span class="eyebrow">PROVA COMPLETATA</span><p>Ogni avventura comincia<br>con una porta aperta.</p></div><div class="help"><span class="eyebrow">COME SI GIOCA</span><p>Clicca sul pavimento per camminare, fai doppio clic per correre. Clicca su un oggetto per avvicinarti e interagire.</p><p><b>Esamina</b> per osservare.<br><b>Esc</b> per fermarti.</p></div></aside></main>
-<footer><div class="verbs"><span class="eyebrow">AZIONI</span><div><button class="verb active" id="interact" aria-pressed="true">↗ Interagisci</button><button class="verb" id="open" aria-pressed="false">Apri</button><button class="verb" id="close" aria-pressed="false">Chiudi</button><button class="verb" id="examine" aria-pressed="false">⌕ Esamina</button></div></div><div class="inventory"><span class="eyebrow">NELLO ZAINO</span><div id="empty-bag">Qualche briciola. Nessuna chiave.</div><button id="key-item" hidden>⚿ <span>Chiave di ottone</span></button></div><div class="status"><span class="eyebrow">ORA</span><span id="status" aria-live="polite">In esplorazione</span></div></footer>
-<div class="footnote">Cartoon 3D · modelli e animazioni creati in Blender <a class="edition-link" href="?mode=2d">Archivio 2D ↗</a> <span>Mouse / touch · D: percorsi</span></div>
-</div><script type="module" src="/src/main.ts"></script></body></html>
+<html lang="it"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="theme-color" content="#181512"><title>Shadowborn Icarus · La stanza del custode</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='8' fill='%23251f1a'/%3E%3Ctext x='10' y='29' font-size='28' fill='%23d8bc80'%3ES%3C/text%3E"></head>
+<body>
+<div class="game-shell iron-frame">
+  <main class="stage" aria-label="La stanza del custode">
+    <div id="game-container" role="application" aria-label="Clicca per camminare, doppio clic per correre; clicca sugli oggetti per interagire"></div>
+    <header class="game-brand parchment-frame">
+      <span class="quill" aria-hidden="true">✒</span><div><span class="brand-top">SHADOWBORN</span><h1>ICARUS</h1><span class="chapter">Una piccola distrazione</span></div>
+    </header>
+    <div class="traveller-badge"><span class="seal" aria-hidden="true">I</span><div><strong>Il viaggiatore</strong><span id="status" aria-live="polite">In esplorazione</span></div></div>
+    <section class="map-panel parchment-frame" aria-label="Mappa della stanza">
+      <h2 class="plaque">La stanza del custode</h2>
+      <svg id="room-map" viewBox="0 0 100 100" role="img" aria-label="Pianta della stanza e posizione del viaggiatore"><path d="M4 95V5H95" fill="none" stroke="#655444" stroke-width="4"/><path d="M4 95H95V5" fill="none" stroke="#89764e" stroke-width="1" stroke-dasharray="2 2"/><g id="map-furniture" fill="#8b6840" stroke="#483d2e" stroke-width=".8"></g><circle id="map-player" cx="70" cy="79" r="3" fill="#245a62" stroke="#f5e4b1" stroke-width="1.4"/></svg>
+      <span class="map-caption">La stanza del custode · Piano terra</span>
+    </section>
+    <button id="journal-toggle" class="journal-tab ornament-button" aria-haspopup="dialog" aria-label="Apri diario e obiettivi"><span aria-hidden="true">✧</span> Diario</button>
+    <div class="scene-hint">Clic per camminare <span>·</span> Doppio clic per correre</div>
+  </main>
+  <footer class="adventure-dock">
+    <section class="inventory iron-frame" aria-label="Inventario">
+      <h2 class="plaque">Inventario</h2>
+      <div class="inventory-grid">
+        <div class="item-slot main-slot"><button id="key-item" hidden aria-label="Seleziona chiave di ottone" title="Chiave di ottone"><svg aria-hidden="true" viewBox="0 0 60 60"><g fill="none" stroke="#dfbb60" stroke-width="5" stroke-linejoin="round"><circle cx="21" cy="19" r="10"/><path d="M28 27L49 48M39 38l-7 7m14-1-7 7"/></g></svg><span>Chiave di ottone</span></button><span class="empty-slot" aria-hidden="true">◇</span></div>
+        <div class="item-slot" aria-hidden="true"></div><div class="item-slot" aria-hidden="true"></div><div class="item-slot" aria-hidden="true"></div><div class="item-slot" aria-hidden="true"></div><div class="item-slot" aria-hidden="true"></div>
+      </div>
+      <p id="empty-bag">Qualche briciola.<br>Nessuna chiave.</p><span class="bag-note">Le piccole cose contano.</span>
+    </section>
+    <section class="dialogue-panel parchment-frame" aria-label="Dialoghi e azioni">
+      <h2 class="plaque">Dialoghi &amp; azioni</h2>
+      <div class="dialogue-copy"><span id="speaker">IL VIAGGIATORE</span><p id="dialogue" aria-live="polite">«Dovevo ricordarmi qualcosa. Ah, sì. Uscire.»</p></div>
+      <div class="divider" aria-hidden="true"><span>✧</span></div>
+      <div class="verbs" role="group" aria-label="Scegli un'azione"><button class="verb active" id="interact" aria-pressed="true">Interagisci</button><button class="verb" id="open" aria-pressed="false">Apri</button><button class="verb" id="close" aria-pressed="false">Chiudi</button><button class="verb" id="examine" aria-pressed="false">Esamina</button></div>
+    </section>
+    <nav class="game-menu iron-frame" aria-label="Menu di gioco">
+      <h2 class="plaque">Menu di gioco</h2>
+      <button id="sound" class="ornament-button" aria-pressed="true" title="Attiva o disattiva tutti i suoni">Audio: attivo</button>
+      <button id="music" class="ornament-button" aria-pressed="true">Musica: attiva</button>
+      <button id="help-toggle" class="ornament-button" aria-haspopup="dialog">Come si gioca</button>
+      <button id="reset" class="ornament-button">Ricomincia ↺</button>
+    </nav>
+  </footer>
+</div>
+<dialog id="journal-dialog" class="journal parchment-frame" aria-labelledby="journal-title"><button class="dismiss" data-dismiss aria-label="Chiudi diario">×</button><span class="eyebrow">IL TACCUINO DEL VIAGGIATORE</span><h2 id="journal-title">Una porta da aprire.</h2><p>Una stanza, una chiave dimenticata.<br>Ogni avventura comincia da qualche parte.</p><ol><li id="goal-key"><span>01</span>Trovare la chiave</li><li id="goal-door"><span>02</span>Aprire la porta</li><li id="goal-exit"><span>03</span>Uscire dalla stanza</li></ol><div id="finish" hidden><strong>Prova completata</strong><p>Ogni avventura comincia con una porta aperta.</p></div></dialog>
+<dialog id="help-dialog" class="journal parchment-frame" aria-labelledby="help-title"><button class="dismiss" data-dismiss aria-label="Chiudi aiuto">×</button><span class="eyebrow">PRENDITI IL TUO TEMPO</span><h2 id="help-title">Un passo alla volta.</h2><p>Clicca sul pavimento per camminare. Fai doppio clic per correre.</p><p><b>Interagisci</b> con un oggetto per avvicinarti e usarlo. <b>Apri</b> e <b>Chiudi</b> controllano libro, baule, ante e porta. <b>Esamina</b> per osservare.</p><p>Clicca direttamente sulla chiave per raccoglierla. Il <b>Diario</b> conserva gli obiettivi.</p><p><kbd>Esc</kbd> per fermarti · <kbd>D</kbd> per mostrare i percorsi.</p><button id="debug" class="ornament-button" aria-pressed="false">Mostra percorsi</button><a class="edition-link" href="?mode=2d">Apri l'archivio 2D ↗</a></dialog>
+<script type="module" src="/src/main.ts"></script>
+</body></html>

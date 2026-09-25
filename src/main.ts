@@ -1,5 +1,8 @@
 import './style.css';
+import {initInterface} from './interface';
+initInterface();
 if(new URLSearchParams(location.search).get('mode')==='2d'){
+  document.querySelector('.map-panel')?.setAttribute('hidden','');
   for(const id of ['open','close','music'])document.getElementById(id)!.hidden=true;
   Promise.all([import('phaser'),import('./room')]).then(([{default:Phaser},{RoomScene}])=>new Phaser.Game({type:Phaser.AUTO,parent:'game-container',width:1024,height:880,transparent:true,antialias:true,scale:{mode:Phaser.Scale.FIT,autoCenter:Phaser.Scale.CENTER_BOTH},scene:[RoomScene]}));
 }else{
