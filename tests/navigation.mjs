@@ -20,3 +20,12 @@ console.log(`PASS: ${checks} safe route segments, detours, blocked goals, bounds
 const regression=verify({u:.74,v:.5},{u:.43,v:.105});let from={u:.74,v:.5};
 for(const to of regression){for(let t=0;t<=1000;t++){const p={u:from.u+(to.u-from.u)*t/1000,v:from.v+(to.v-from.v)*t/1000};assert.ok(walkable(p),'unsafe intermediate movement position');}from=to;}
 console.log('PASS: key-to-door movement corner regression.');
+// Wall/window clearance also applies to blocked click targets and detours.
+assert.equal(walkable({u:.06,v:.8}),false,'shoulders clear west wall');
+assert.equal(walkable({u:.4,v:.06}),false,'shoulders clear rear wall');
+assert.equal(walkable({u:.12,v:.52}),false,'body clears window sill');
+for(const target of [{u:.001,v:.5},{u:.04,v:.7},{u:.4,v:.001}]){
+ const route=verify(start,target),end=route.at(-1);assert.ok(walkable(end));
+ if(end.v>.294&&end.v<.746)assert.ok(end.u>=.13725,'window approach clearance');
+}
+console.log('PASS: wall shoulders, projecting window sill and wall-click approach clearance.');

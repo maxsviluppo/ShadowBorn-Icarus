@@ -81,7 +81,7 @@ export async function startRoom3D(){
   function setMode(next:typeof mode){mode=next;for(const id of ['interact','examine','open','close']){$(id).classList.toggle('active',id===mode);$(id).setAttribute('aria-pressed',String(id===mode));}}
   function drawRoute(){if(routeLine){scene.remove(routeLine);routeLine.geometry.dispose();(routeLine.material as THREE.Material).dispose();routeLine=null;}
     if(path.length){routeLine=new THREE.Line(new THREE.BufferGeometry().setFromPoints([location,...path].map(p=>world(p).setY(.16))),new THREE.LineBasicMaterial({color:0xe9cb81}));scene.add(routeLine);routeLine.visible=debug;}}
-  function toggleDebug(){debug=!debug;diagnostics.visible=debug;if(routeLine)routeLine.visible=debug;$('debug').setAttribute('aria-pressed',String(debug));$('debug').textContent=debug?'Nascondi percorsi':'Mostra percorsi';}
+  function toggleDebug(){debug=!debug;diagnostics.visible=false;if(routeLine)routeLine.visible=debug;$('debug').setAttribute('aria-pressed',String(debug));$('debug').textContent=debug?'Nascondi percorsi':'Mostra percorsi';}
   function cancel(){unlockRemaining=0;audio.stop('lock');pending=null;motion.stop();marker.visible=false;}
   function action(id:Target){
     tooltip.hidden=true;
@@ -101,18 +101,19 @@ export async function startRoom3D(){
       if(!doorUnlocked){unlockRemaining=1.1;audio.play('lock',true,1.1);say('La chiave gira nella serratura...');}
       else{doorOpen=true;keySelected=false;say('La porta si apre. Posso uscire.');}
     }
-    else if(mode==='open'){say('La porta è gi... aperta. Posso uscire con Interagisci.');}
+    else if(mode==='open'){say('La porta è già aperta. Posso uscire con Interagisci.');}
     else{completed=true;say('Fuori mi aspetta una nuova avventura. Spero si ricordi lei di me.');}
     for(const [kind,open] of Object.entries({book:bookOpen,chest:chestOpen,cabinet:cabinetOpen,door:doorOpen}))if(before[kind as PropKind]!==open)animateProp(kind as PropKind,open);
     sync();
   }
   function request(target:UV,id:Target|null=null,run=false){if(completed)return;if(id!=='door'&&unlockRemaining>0){unlockRemaining=0;audio.stop('lock');}if(!motion.go(target,run)){say('Di lì non passo. Proviamo un’altra strada.');return;}
-    pending=id;path=motion.path;marker.position.copy(world(target)).setY(.15);marker.visible=true;drawRoute();}
+    pending=id;path=motion.path;marker.position.copy(world(target)).setY(.15);marker.visible=false;drawRoute();}
   function inspect(id:Target){const text={key:'Una piccola chiave di ottone. Per una piccola distrazione.',table:'Un registro rilegato. Posso aprirlo e richiuderlo.',cabinet:'Un mobile con due ante, sotto le candele.',door:doorOpen?'La strada è libera. Posso uscire.':'Una porta di legno. La serratura sembra aspettare una chiave.',chest:'Un vecchio baule. Le sue cerniere hanno ancora qualcosa da dire.'};say(text[id]);}
   const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2(),floorPlane=new THREE.Plane(new THREE.Vector3(0,1,0),-.075);
   function pick(event:PointerEvent){const rect=renderer.domElement.getBoundingClientRect();pointer.set((event.clientX-rect.left)/rect.width*2-1,-(event.clientY-rect.top)/rect.height*2+1);raycaster.setFromCamera(pointer,camera);
     const hits=raycaster.intersectObjects(proxies.filter(p=>p.userData.id!=='key'||!hasKey));
-    return hits[0]?.object.userData.id as Target|undefined;
+    const surface=raycaster.intersectObject(room,true)[0],hit=hits[0];
+    return hit&&(!surface||hit.distance<=surface.distance+.16)?hit.object.userData.id as Target:undefined;
   }
   let lastTap={time:-1000,x:0,y:0};
   renderer.domElement.addEventListener('pointerdown',event=>{if(event.button!==0)return;void footsteps.unlock();void audio.unlock();host.dataset.audioStarted='true';const id=pick(event);if(completed)return;
@@ -120,10 +121,18 @@ export async function startRoom3D(){
     lastTap={time:event.timeStamp,x:event.clientX,y:event.clientY};
     if(run&&interacting>.35)return;
     if(id){if(mode==='examine'){cancel();inspect(id);}else request(goals[id],id,run);}
-    else if(raycaster.ray.intersectPlane(floorPlane,origin)){request(uv(origin),null,run);}
+    else {
+      const surface=raycaster.intersectObject(room,true)[0];
+      if(surface&&surface.point.y>.18){
+        const p=uv(surface.point);
+        if(p.u<.14||p.v<.075){
+          if(mode==='examine'){cancel();say(p.u<.14&&p.v>.29&&p.v<.75?'Una finestra profonda, con tende e un davanzale di pietra.':'Pietra solida. Meglio passarle accanto.');}
+          else request({u:Math.max(.001,Math.min(.999,p.u)),v:Math.max(.001,Math.min(.999,p.v))},null,run);
+        }
+      }else if(raycaster.ray.intersectPlane(floorPlane,origin)){request(uv(origin),null,run);}
+    }
   });
-  renderer.domElement.addEventListener('pointermove',event=>{const id=pick(event);tooltip.hidden=!id||completed;renderer.domElement.style.cursor=id?'pointer':'default';if(id){tooltip.textContent=({key:'Chiave di ottone',table:bookOpen?'Chiudi il libro':'Apri il libro',cabinet:cabinetOpen?'Chiudi le ante':'Apri le ante',door:doorOpen?'Esci dalla stanza':'Porta chiusa',chest:chestOpen?'Chiudi il baule':'Apri il baule'})[id];const r=host.getBoundingClientRect();tooltip.style.left=`${Math.max(90,Math.min(r.width-100,event.clientX-r.left))}px`;tooltip.style.top=`${Math.max(25,event.clientY-r.top-16)}px`;}});
-  renderer.domElement.addEventListener('pointerleave',()=>tooltip.hidden=true);
+  renderer.domElement.addEventListener('pointermove',event=>{renderer.domElement.style.cursor=pick(event)&&!completed?'pointer':'default';});
   $('interact').onclick=()=>setMode('interact');$('examine').onclick=()=>setMode('examine');$('debug').onclick=toggleDebug;$('open').onclick=()=>setMode('open');$('close').onclick=()=>setMode('close');
   $('sound').onclick=()=>{footsteps.toggle();audio.setEnabled(footsteps.enabled);void footsteps.unlock();$('sound').textContent=footsteps.enabled?'Audio: attivo':'Audio: spento';$('sound').setAttribute('aria-pressed',String(footsteps.enabled));};
   $('music').onclick=()=>{const on=audio.toggleMusic();$('music').textContent=on?'Musica: attiva':'Musica: spenta';$('music').setAttribute('aria-pressed',String(on));};

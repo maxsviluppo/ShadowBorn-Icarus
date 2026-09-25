@@ -3,7 +3,12 @@ export type UV = { u: number; v: number };
 export type Block = { u: number; v: number; w: number; h: number; id: string };
 export const GRID = 56;
 export const RADIUS = .026;
+// Wall limits include shoulder/backpack clearance, beyond the foot radius.
 export const blocks: Block[] = [
+  { id: 'west-wall', u: 0, v: 0, w: .045, h: 1 },
+  { id: 'rear-wall', u: 0, v: 0, w: 1, h: .045 },
+  // Window sill and gathered curtains protrude into the room.
+  { id: 'window', u: 0, v: .32, w: .11125, h: .40 },
   { id: 'table', u: .43, v: .41, w: .25, h: .18 },
   { id: 'back-table', u: .035, v: .125, w: .24, h: .13 },
   { id: 'cabinet', u: .60, v: .015, w: .15, h: .23 },
