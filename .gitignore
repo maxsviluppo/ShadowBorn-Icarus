@@ -9,3 +9,6 @@ __pycache__/
 *.blend1
 *.blend2
 art/audit*.json
+
+# User high-resolution source and temporary inspection renders stay local.
+art/imported-character/

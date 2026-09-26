@@ -37,18 +37,24 @@ export async function startRoom3D(){
   const materials=new Map<string,THREE.MeshToonMaterial>();
   for(const root of [room,hero])root.traverse(o=>{if(!(o instanceof THREE.Mesh))return;
     const old=o.material as THREE.MeshStandardMaterial;
-    let m=materials.get(old.uuid);if(!m){m=new THREE.MeshToonMaterial({color:old.color,gradientMap:ramp,emissive:old.emissive,emissiveIntensity:old.emissiveIntensity??0});materials.set(old.uuid,m);}o.material=m;o.castShadow=true;o.receiveShadow=true;
+    let m=materials.get(old.uuid);if(!m){m=new THREE.MeshToonMaterial({color:old.color,map:old.map,normalMap:old.normalMap,normalScale:old.normalScale,gradientMap:ramp,emissive:old.emissive,emissiveIntensity:old.emissiveIntensity??0});materials.set(old.uuid,m);}o.material=m;o.castShadow=true;o.receiveShadow=true;
   });
   // Merge leaf meshes at each articulated pivot: preserve the rig, reduce draw calls.
   function batch(parent:THREE.Object3D){
     for(const child of [...parent.children])batch(child);
     const groups=new Map<THREE.Material,THREE.Mesh[]>();
-    for(const child of parent.children)if(child instanceof THREE.Mesh&&!child.children.length&&!Array.isArray(child.material)){const list=groups.get(child.material)??[];list.push(child);groups.set(child.material,list);}
+    for(const child of parent.children)if(child instanceof THREE.Mesh&&!(child instanceof THREE.SkinnedMesh)&&!child.children.length&&!Array.isArray(child.material)){const list=groups.get(child.material)??[];list.push(child);groups.set(child.material,list);}
     for(const [material,meshes] of groups){if(meshes.length<2)continue;const geometries=meshes.map(mesh=>{mesh.updateMatrix();return mesh.geometry.clone().applyMatrix4(mesh.matrix);});const geometry=mergeGeometries(geometries);geometries.forEach(g=>g.dispose());if(!geometry)continue;const merged=new THREE.Mesh(geometry,material);merged.castShadow=true;merged.receiveShadow=true;parent.add(merged);meshes.forEach(m=>parent.remove(m));}
   }
   batch(room);batch(hero);
   const node=(name:string)=>{const result=hero.getObjectByName(name);if(!result)throw new Error(`Missing character joint: ${name}`);return result;};
   const joints=Object.fromEntries(['Body','Torso','Head','Backpack','ArmL','ArmR','ForearmL','ForearmR','LegL','LegR','ShinL','ShinR','FootL','FootR'].map(n=>[n,node(n)]));
+  const rigData=hero.getObjectByName('Traveller')?.userData;
+  const legDimensions=rigData?.gaitUpper?{upper:rigData.gaitUpper as number,lower:rigData.gaitLower as number,stance:rigData.gaitStance as number}:undefined;
+  const bodyDrop=rigData?.gaitDrop as number|undefined??-.105;
+  // Blender skin joints retain Z-up local axes beneath the converted root bone.
+  const skinAxes=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),Math.PI/2);
+  const inverseSkinAxes=skinAxes.clone().invert();
   const door=room.getObjectByName('DoorHinge')!,lid=room.getObjectByName('ChestLid')!,key=room.getObjectByName('BrassKey')!;
   const bookCover=room.getObjectByName('BookCover')!,cabinetLeft=room.getObjectByName('CabinetLeft')!,cabinetRight=room.getObjectByName('CabinetRight')!;
   const bookRest=bookCover.quaternion.clone(),leftRest=cabinetLeft.quaternion.clone(),rightRest=cabinetRight.quaternion.clone();
@@ -146,22 +152,24 @@ export async function startRoom3D(){
   // Analytic two-link IK: soles follow a planted stance, then lift for the swing.
   // The cycle advances by travelled distance, so acceleration cannot make feet race.
   function pose(dt:number,moving:boolean){
+    if(joints.Body instanceof THREE.Bone)for(const [name,joint] of Object.entries(joints))if(name!=='Body')joint.rotation.set(0,0,0);
     blend=THREE.MathUtils.damp(blend,moving?Math.min(1,speed/.25):0,7,dt);
     runBlend=THREE.MathUtils.damp(runBlend,THREE.MathUtils.clamp((speed-WALK_SPEED)/(RUN_SPEED-WALK_SPEED),0,1),6,dt);
-    joints.Body.position.y=-.105-.04*runBlend+Math.cos(phase*2)*(.005+.015*runBlend)*blend;
+    joints.Body.position.y=bodyDrop-.04*runBlend+Math.cos(phase*2)*(.005+.015*runBlend)*blend;
     joints.Torso.rotation.z=Math.sin(phase)*.045*blend+Math.sin(elapsed*.9)*.008;
     joints.Torso.rotation.x=(.045+.14*runBlend)*blend+Math.sin(elapsed*1.5)*.007;
     joints.Head.rotation.y=Math.sin(elapsed*.8)*.05*(1-blend);
     joints.Head.rotation.z=-.045+Math.sin(phase-.3)*.025*blend;
     joints.Backpack.rotation.x=Math.sin(phase-.6)*(.035+.04*runBlend)*blend;
     for(const side of ['L','R']){
-      const leg=solveLeg(phase,side as 'L'|'R',blend,runBlend);
+      const leg=solveLeg(phase,side as 'L'|'R',blend,runBlend,legDimensions);
       joints['Leg'+side].rotation.x=leg.hip;joints['Shin'+side].rotation.x=leg.knee;joints['Foot'+side].rotation.x=leg.ankle;
       joints['Arm'+side].rotation.x=-Math.sin(phase+(side==='L'?0:Math.PI)-.2)*(.24+.20*runBlend)*blend;
       joints['Arm'+side].rotation.z=side==='L'?.06:-.06;
       joints['Forearm'+side].rotation.x=-.08-.75*runBlend;
     }
     if(interacting>0){interacting=Math.max(0,interacting-dt);joints.ArmR.rotation.x=-.7*Math.sin(interacting/.65*Math.PI);}
+    if(joints.Body instanceof THREE.Bone)for(const [name,joint] of Object.entries(joints))if(name!=='Body')joint.quaternion.premultiply(skinAxes).multiply(inverseSkinAxes);
   }
   let last=performance.now(),shadowFrame=0;
   function tick(now:number){requestAnimationFrame(tick);if(document.hidden||now-last<1000/30)return;const animationDt=(now-last)/1000,dt=Math.min(animationDt,.10);last=now;elapsed+=dt;let moving=false;

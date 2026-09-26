@@ -1,0 +1,11 @@
+{
+  "sourceTriangles": 1499458,
+  "stlTriangles": 1498066,
+  "gameTriangles": 48000,
+  "sourceTexture": 4096,
+  "gameTexture": 2048,
+  "upper": 0.3135,
+  "lower": 0.3465,
+  "stance": 0.6149999999999999,
+  "drop": -0.04500000000000004
+}
