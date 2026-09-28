@@ -25,3 +25,6 @@ Verifica: suite automatica, controllo pose renderizzate in Blender. Il browser h
 
 ## Revisione 0.9.1: estensione della gamba in appoggio
 La piega IK era gia rivolta in avanti, ma il bacino troppo basso teneva la camminata accovacciata. Ora l'altezza segue il piede in appoggio, con una lieve flessione di sicurezza per non bloccare il ginocchio. Verifica aggiuntiva sulle articolazioni effettive Blender di tutte le pose Idle/Walk/Run; GIF laterale rallentata in art/knee-review/Gambe-corrette.gif. La build online precedente non e stata aggiornata per i limiti di pubblicazione della sessione.
+
+## Versione 0.9.2
+Inclinazione aggiuntiva del busto di 4 gradi durante la corsa, interpolata gradualmente. Include gambe corrette, estensione della gamba in appoggio e movimenti approvati nell'anteprima. Il modello usa un URL con versione per evitare il riutilizzo del vecchio GLB dalla cache.

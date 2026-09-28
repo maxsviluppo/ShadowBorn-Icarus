@@ -30,7 +30,7 @@ export async function startRoom3D(){
   const fill=new THREE.DirectionalLight(0xc6dbe4,.8);fill.position.set(4,5,-2);scene.add(fill);
   const ground=new THREE.Mesh(new THREE.PlaneGeometry(200,200),new THREE.MeshLambertMaterial({color:0x182825}));ground.rotation.x=-Math.PI/2;ground.position.y=-.51;ground.receiveShadow=true;scene.add(ground);
   const loader=new GLTFLoader();
-  const [roomFile,heroFile]=await Promise.all([loader.loadAsync('/assets/3d/custodian-room.glb'),loader.loadAsync('/assets/3d/traveller.glb')]);
+  const [roomFile,heroFile]=await Promise.all([loader.loadAsync('/assets/3d/custodian-room.glb'),loader.loadAsync('/assets/3d/traveller.glb?v=0.9.2')]);
   const room=roomFile.scene,hero=heroFile.scene;scene.add(room,hero);
   // A continuous palette with a four-band ramp keeps the illustration readable.
   const ramp=new THREE.DataTexture(new Uint8Array([100,165,215,255]),4,1,THREE.RedFormat);ramp.minFilter=THREE.NearestFilter;ramp.magFilter=THREE.NearestFilter;ramp.needsUpdate=true;

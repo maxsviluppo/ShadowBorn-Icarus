@@ -38,7 +38,7 @@ export function solveLeg(phase:number,side:'L'|'R',blend:number,run=0,dimensions
 }
 export function upperBody(phase:number,blend:number,run=0){
   const left=Math.cos(phase),right=-left;
-  return {lean:(.035+.14*run)*blend,sway:Math.sin(phase)*(.025+.025*run)*blend,
+  return {lean:(.035+(.14+Math.PI/45)*run)*blend,sway:Math.sin(phase)*(.025+.025*run)*blend,
     twist:Math.cos(phase)*(.025+.055*run)*blend,
     armL:left*(.26+.35*run)*blend,armR:right*(.26+.35*run)*blend,
     elbowL:-.08-(.15+.95*run)*blend-Math.max(0,-left)*.12*run*blend,
@@ -48,4 +48,3 @@ export function advanceGait(phase:number,distance:number,run=0){
   const next=phase+Math.max(0,distance)/(STRIDE_METRES+(RUN_STRIDE_METRES-STRIDE_METRES)*run)*Math.PI*2;
   return{phase:next,contacts:Math.floor(next/Math.PI)-Math.floor(phase/Math.PI)};
 }
-
