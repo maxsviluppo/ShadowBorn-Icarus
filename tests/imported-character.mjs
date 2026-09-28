@@ -16,7 +16,7 @@ const rig=model.nodes.find(n=>n.name==='Traveller').extras;
 const source=await fs.readFile(new URL('../src/gait3d.ts',import.meta.url),'utf8');
 const js=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ES2022}}).outputText;
 const {solveLeg}=await import('data:text/javascript;base64,'+Buffer.from(js).toString('base64'));
-const dims={upper:rig.gaitUpper,lower:rig.gaitLower,stance:rig.gaitStance};
-for(let phase=0;phase<Math.PI*4;phase+=.027)for(const side of ['L','R'])for(const blend of [0,.5,1])for(const run of [0,.5,1]){const p=solveLeg(phase,side,blend,run,dims);const y=dims.upper*Math.cos(p.hip)+dims.lower*Math.cos(p.hip+p.knee),z=-dims.upper*Math.sin(p.hip)-dims.lower*Math.sin(p.hip+p.knee);assert.ok(Math.abs(y-p.y)<1e-6&&Math.abs(z-p.z)<1e-6);assert.ok(Math.abs(p.hip+p.knee+p.ankle)<1e-9);}
-assert.ok(buffer.length<4_000_000);
+const dims={upper:rig.gaitUpper,lower:rig.gaitLower,stance:rig.gaitStance,idleStance:rig.gaitIdleStance};
+for(let phase=0;phase<Math.PI*4;phase+=.027)for(const side of ['L','R'])for(const blend of [0,.5,1])for(const run of [0,.5,1]){const p=solveLeg(phase,side,blend,run,dims);const y=dims.upper*Math.cos(p.hip)+dims.lower*Math.cos(p.hip+p.knee),z=-dims.upper*Math.sin(p.hip)-dims.lower*Math.sin(p.hip+p.knee);assert.ok(Math.abs(y-p.y)<1e-6&&Math.abs(z-p.z)<1e-6);assert.ok(Math.abs(p.hip+p.knee+p.ankle)<1e-9);const kneeZ=-dims.upper*Math.sin(p.hip),kneeY=dims.upper*Math.cos(p.hip);assert.ok(kneeZ-p.z*kneeY/p.y>0,"knee bends in front of hip-to-ankle line");}
+const idle=solveLeg(0,"L",0,0,dims);assert.ok(idle.knee>0&&idle.knee<.12,"idle legs nearly straight, not locked or reversed");assert.ok(Math.abs(rig.gaitDrop+dims.idleStance-dims.stance+dims.upper+dims.lower-idle.y)<1e-6,"idle rise keeps soles on the ground");assert.ok(buffer.length<4_000_000);
 console.log('PASS: textured skin, normalized weights, UVs, embedded texture, idle/walk/run clips, adapted planted-foot IK and web size budget.');

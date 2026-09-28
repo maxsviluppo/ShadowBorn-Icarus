@@ -60,19 +60,20 @@ bsdf.inputs['Metallic'].default_value=0;bsdf.inputs['Roughness'].default_value=.
 bsdf.inputs['Base Color'].default_value=(1,1,1,1)
 rig['source']='User OBJ with original UV texture, reduced from 1499458 to 48000 triangles'
 upper=.38*scale;lower=.42*scale;ankle=.10*scale;hip=.90*scale;stance=upper+lower-.045
-rig['gaitUpper']=upper;rig['gaitLower']=lower;rig['gaitStance']=stance;rig['gaitDrop']=stance+ankle-hip
+idle_stance=upper+lower-.001
+rig['gaitUpper']=upper;rig['gaitLower']=lower;rig['gaitStance']=stance;rig['gaitIdleStance']=idle_stance;rig['gaitDrop']=stance+ankle-hip
 # Export inspectable idle, walk and run actions as well as the live procedural rig.
 def pose(frame,phase,amount,run):
  for b in rig.pose.bones:b.rotation_mode='XYZ';b.rotation_euler=(0,0,0);b.location=(0,0,0)
- rig.pose.bones['Body'].location.z=rig['gaitDrop']-.04*run+math.cos(phase*2)*(.005+.015*run)*amount
+ rig.pose.bones['Body'].location.z=rig['gaitDrop']+(idle_stance-stance)*(1-amount)-.04*run+math.cos(phase*2)*(.005+.015*run)*amount
  rig.pose.bones['Torso'].rotation_euler.x=(.045+.14*run)*amount
  for s,offset in [('L',0),('R',math.pi)]:
   t=((phase+offset)/math.tau)%1;swing=t>=.5;p=(t-.5)*2 if swing else t*2;reach=.20+.05*run
   z=(-reach+2*reach*p*p*(3-2*p) if swing else reach-2*reach*p)*amount
   lift=(math.sin(p*math.pi)*(.095+.065*run) if swing else 0)*amount
-  y=stance-.04*run-lift+math.cos(phase*2)*(.005+.015*run)*amount;d=min(math.hypot(y,z),upper+lower-.0001);clamp=lambda a:max(-1,min(1,a))
-  knee=math.pi-math.acos(clamp((upper*upper+lower*lower-d*d)/(2*upper*lower)));angle=-math.atan2(z,y)+math.acos(clamp((upper*upper+d*d-lower*lower)/(2*upper*d)))
-  for name,a in [('Leg',angle),('Shin',-knee),('Foot',-angle+knee),('Arm',-math.sin(phase+offset-.2)*(.24+.20*run)*amount),('Forearm',-.08-.75*run)]:rig.pose.bones[name+s].rotation_euler.x=a
+  y=stance+(idle_stance-stance)*(1-amount)-.04*run-lift+math.cos(phase*2)*(.005+.015*run)*amount;d=min(math.hypot(y,z),upper+lower-.0001);clamp=lambda a:max(-1,min(1,a))
+  knee=math.pi-math.acos(clamp((upper*upper+lower*lower-d*d)/(2*upper*lower)));angle=-math.atan2(z,y)-math.acos(clamp((upper*upper+d*d-lower*lower)/(2*upper*d)))
+  for name,a in [('Leg',angle),('Shin',knee),('Foot',-angle-knee),('Arm',-math.sin(phase+offset-.2)*(.24+.20*run)*amount),('Forearm',-.08-.75*run)]:rig.pose.bones[name+s].rotation_euler.x=a
  for b in rig.pose.bones:b.keyframe_insert('location',frame=frame);b.keyframe_insert('rotation_euler',frame=frame)
 for name,amount,run in [('Idle',0,0),('Walk',1,0),('Run',1,1)]:
  rig.animation_data_create();action=bpy.data.actions.new(name);rig.animation_data.action=action

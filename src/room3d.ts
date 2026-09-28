@@ -50,7 +50,7 @@ export async function startRoom3D(){
   const node=(name:string)=>{const result=hero.getObjectByName(name);if(!result)throw new Error(`Missing character joint: ${name}`);return result;};
   const joints=Object.fromEntries(['Body','Torso','Head','Backpack','ArmL','ArmR','ForearmL','ForearmR','LegL','LegR','ShinL','ShinR','FootL','FootR'].map(n=>[n,node(n)]));
   const rigData=hero.getObjectByName('Traveller')?.userData;
-  const legDimensions=rigData?.gaitUpper?{upper:rigData.gaitUpper as number,lower:rigData.gaitLower as number,stance:rigData.gaitStance as number}:undefined;
+  const legDimensions=rigData?.gaitUpper?{upper:rigData.gaitUpper as number,lower:rigData.gaitLower as number,stance:rigData.gaitStance as number,idleStance:rigData.gaitIdleStance as number|undefined}:undefined;
   const bodyDrop=rigData?.gaitDrop as number|undefined??-.105;
   // Blender skin joints retain Z-up local axes beneath the converted root bone.
   const skinAxes=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),Math.PI/2);
@@ -155,7 +155,8 @@ export async function startRoom3D(){
     if(joints.Body instanceof THREE.Bone)for(const [name,joint] of Object.entries(joints))if(name!=='Body')joint.rotation.set(0,0,0);
     blend=THREE.MathUtils.damp(blend,moving?Math.min(1,speed/.25):0,7,dt);
     runBlend=THREE.MathUtils.damp(runBlend,THREE.MathUtils.clamp((speed-WALK_SPEED)/(RUN_SPEED-WALK_SPEED),0,1),6,dt);
-    joints.Body.position.y=bodyDrop-.04*runBlend+Math.cos(phase*2)*(.005+.015*runBlend)*blend;
+    const idleRise=legDimensions?((legDimensions.idleStance??legDimensions.stance)-legDimensions.stance)*(1-blend):0;
+    joints.Body.position.y=bodyDrop+idleRise-.04*runBlend+Math.cos(phase*2)*(.005+.015*runBlend)*blend;
     joints.Torso.rotation.z=Math.sin(phase)*.045*blend+Math.sin(elapsed*.9)*.008;
     joints.Torso.rotation.x=(.045+.14*runBlend)*blend+Math.sin(elapsed*1.5)*.007;
     joints.Head.rotation.y=Math.sin(elapsed*.8)*.05*(1-blend);

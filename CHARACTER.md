@@ -36,3 +36,6 @@ Con Blender 4.4, dalla cartella del progetto:
 Se viene rigenerata la stanza con build-world.py, rieseguire poi rig-imported-character.py per ripristinare questo personaggio.
 
 Verifiche: continuita dei pesi, UV e texture incorporate, numero di triangoli e dimensione del file, azioni esportate, cinematica inversa sulle nuove proporzioni, suite di navigazione/movimento/audio. Nel browser: arrivo davanti alla finestra, interazione e apertura del libro con audio, nessun errore console. Viste Blender di attesa, camminata e corsa controllate.
+
+## Correzione 0.8.1
+Ginocchia rivolte in avanti nella soluzione IK e nei cicli Blender. Gambe quasi dritte a riposo; il bacino sale gradualmente per mantenere le suole sul pavimento. Aggiornati modello GLB, scena Blender e anteprima. Test di regressione verificano la direzione della flessione e l'appoggio a riposo.
