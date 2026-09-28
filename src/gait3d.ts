@@ -4,9 +4,20 @@ const standard:LegDimensions={upper:.29,lower:.265,stance:.51};
 export const STRIDE_METRES=1.10;
 export const RUN_STRIDE_METRES=1.38;
 export function bodyHeight(phase:number,blend:number,run=0,d:LegDimensions=standard){
-  const scale=(d.upper+d.lower)/.66;
-  const moving=d.stance-(.030+.055*run)*scale-Math.sin(phase*2)*(.010+.025*run)*scale;
-  return (d.idleStance??d.stance)*(1-blend)+moving*blend;
+  const total=d.upper+d.lower,scale=total/.66,duty=.54-.18*run;
+  const reach=(STRIDE_METRES+(RUN_STRIDE_METRES-STRIDE_METRES)*run)*duty/2*scale;
+  const extension=total-(.006+.016*run)*scale;
+  const contactHeight=Math.sqrt(extension*extension-reach*reach);
+  let height=contactHeight+(extension-contactHeight)*Math.sin(phase)**2;
+  // Raise the pelvis over the support foot instead of holding a crouch all cycle.
+  for(const offset of [0,.5]){
+    const t=((phase/(Math.PI*2)+offset)%1+1)%1;
+    const swing=t>=duty,p=swing?(t-duty)/(1-duty):t/duty;
+    const z=swing?-reach+2*reach*p*p*(3-2*p):reach-2*reach*p;
+    const lift=swing?Math.pow(Math.sin(p*Math.PI),1.1)*(.075+.20*run)*scale:0;
+    height=Math.min(height,Math.sqrt(extension*extension-z*z)+lift);
+  }
+  return (d.idleStance??d.stance)*(1-blend)+height*blend;
 }
 export function solveLeg(phase:number,side:'L'|'R',blend:number,run=0,dimensions:LegDimensions=standard){
   const t=((phase/(Math.PI*2)+(side==='L'?0:.5))%1+1)%1;
@@ -37,3 +48,4 @@ export function advanceGait(phase:number,distance:number,run=0){
   const next=phase+Math.max(0,distance)/(STRIDE_METRES+(RUN_STRIDE_METRES-STRIDE_METRES)*run)*Math.PI*2;
   return{phase:next,contacts:Math.floor(next/Math.PI)-Math.floor(phase/Math.PI)};
 }
+

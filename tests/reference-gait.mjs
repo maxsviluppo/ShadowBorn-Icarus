@@ -14,3 +14,5 @@ assert.ok(flight,'run has a brief airborne recovery');assert.ok(runLift>walkLift
 assert.ok(Math.abs(upperBody(0,1,1).elbowL)>Math.abs(upperBody(0,1,0).elbowL));
 for(const [run,stride] of [[0,1.10],[1,1.38]])for(const hz of [24,30,60,120]){let phase=.001,contacts=0;for(let i=0;i<10*hz;i++){const p=advanceGait(phase,stride/hz,run);phase=p.phase;contacts+=p.contacts;}assert.equal(contacts,20);}
 console.log('PASS: GIF-derived walk support, run recovery/flight, arm distinction, continuous blend and synchronized contacts.');
+
+assert.ok(solveLeg(Math.PI/2,'L',1,0).knee<.4,'support leg extends under pelvis instead of staying crouched');

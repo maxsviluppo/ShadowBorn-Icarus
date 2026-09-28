@@ -22,3 +22,6 @@ Un'unica funzione TypeScript produce le pose runtime e i campioni per Blender:
 Eseguire questa sequenza dopo un'eventuale rigenerazione con rig-imported-character.py. I cicli GLB Idle/Walk/Run e le azioni Blender Reference_Idle/Reference_Walk/Reference_Run sono aggiornati; la scena della stanza contiene lo stesso rig.
 
 Verifica: suite automatica, controllo pose renderizzate in Blender. Il browser ha negato l'accesso all'anteprima locale; la verifica interattiva non e stata effettuata. La pubblicazione resta bloccata dalle autorizzazioni della sessione, come per la precedente versione.
+
+## Revisione 0.9.1: estensione della gamba in appoggio
+La piega IK era gia rivolta in avanti, ma il bacino troppo basso teneva la camminata accovacciata. Ora l'altezza segue il piede in appoggio, con una lieve flessione di sicurezza per non bloccare il ginocchio. Verifica aggiuntiva sulle articolazioni effettive Blender di tutte le pose Idle/Walk/Run; GIF laterale rallentata in art/knee-review/Gambe-corrette.gif. La build online precedente non e stata aggiornata per i limiti di pubblicazione della sessione.
