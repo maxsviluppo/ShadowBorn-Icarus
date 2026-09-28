@@ -39,3 +39,6 @@ Verifiche: continuita dei pesi, UV e texture incorporate, numero di triangoli e 
 
 ## Correzione 0.8.1
 Ginocchia rivolte in avanti nella soluzione IK e nei cicli Blender. Gambe quasi dritte a riposo; il bacino sale gradualmente per mantenere le suole sul pavimento. Aggiornati modello GLB, scena Blender e anteprima. Test di regressione verificano la direzione della flessione e l'appoggio a riposo.
+
+## Movimento 0.9.0
+Walk e Run ricostruiti dal riferimento GIF fornito. I cicli Blender sono campionati dalle stesse funzioni del gioco. Dettagli, limiti e istruzioni in GAIT-REFERENCE.md. Dopo rig-imported-character.py eseguire anche la sequenza descritta in tale documento.

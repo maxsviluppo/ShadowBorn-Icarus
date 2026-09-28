@@ -14,7 +14,7 @@ for(let phase=0;phase<Math.PI*4;phase+=.017)for(const side of ['L','R'])for(cons
   assert.ok(Math.abs(p.hip+p.knee+p.ankle)<1e-9,'sole stays level');
   if(!p.swing)assert.equal(p.lift,0,'stance must not hover');
 }
-for(const hz of [24,30,60,120]){let phase=.001,contacts=0;for(let i=0;i<hz*10;i++){const next=advanceGait(phase,.8/hz);phase=next.phase;contacts+=next.contacts;}assert.equal(contacts,20,'foot contacts independent of frame rate');}
+for(const hz of [24,30,60,120]){let phase=.001,contacts=0;for(let i=0;i<hz*10;i++){const next=advanceGait(phase,1.10/hz);phase=next.phase;contacts+=next.contacts;}assert.equal(contacts,20,'foot contacts independent of frame rate');}
 assert.equal(advanceGait(2,0).contacts,0);
 assert.equal(advanceGait(2,-1).phase,2);
 function glbJson(buffer){assert.equal(buffer.readUInt32LE(0),0x46546c67);return JSON.parse(buffer.subarray(20,20+buffer.readUInt32LE(12)).toString());}

@@ -3,7 +3,7 @@ import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {blocks,walkable,type UV} from './navigation';
 import {Footsteps} from './footsteps';
-import {solveLeg,advanceGait} from './gait3d';
+import {solveLeg,advanceGait,bodyHeight,upperBody} from './gait3d';
 import {RoomAudio} from './roomAudio';
 import {PropMotion,type PropKind} from './propMotion';
 import {Locomotion3D,WALK_SPEED,RUN_SPEED} from './locomotion3d';
@@ -155,19 +155,20 @@ export async function startRoom3D(){
     if(joints.Body instanceof THREE.Bone)for(const [name,joint] of Object.entries(joints))if(name!=='Body')joint.rotation.set(0,0,0);
     blend=THREE.MathUtils.damp(blend,moving?Math.min(1,speed/.25):0,7,dt);
     runBlend=THREE.MathUtils.damp(runBlend,THREE.MathUtils.clamp((speed-WALK_SPEED)/(RUN_SPEED-WALK_SPEED),0,1),6,dt);
-    const idleRise=legDimensions?((legDimensions.idleStance??legDimensions.stance)-legDimensions.stance)*(1-blend):0;
-    joints.Body.position.y=bodyDrop+idleRise-.04*runBlend+Math.cos(phase*2)*(.005+.015*runBlend)*blend;
-    joints.Torso.rotation.z=Math.sin(phase)*.045*blend+Math.sin(elapsed*.9)*.008;
-    joints.Torso.rotation.x=(.045+.14*runBlend)*blend+Math.sin(elapsed*1.5)*.007;
+    const upper=upperBody(phase,blend,runBlend);
+    joints.Body.position.y=bodyDrop+bodyHeight(phase,blend,runBlend,legDimensions)-(legDimensions?.stance??.51);
+    joints.Torso.rotation.z=upper.sway+Math.sin(elapsed*.9)*.008*(1-blend);
+    joints.Torso.rotation.x=upper.lean+Math.sin(elapsed*1.5)*.007*(1-blend);
+    joints.Torso.rotation.y=upper.twist;
     joints.Head.rotation.y=Math.sin(elapsed*.8)*.05*(1-blend);
     joints.Head.rotation.z=-.045+Math.sin(phase-.3)*.025*blend;
     joints.Backpack.rotation.x=Math.sin(phase-.6)*(.035+.04*runBlend)*blend;
     for(const side of ['L','R']){
       const leg=solveLeg(phase,side as 'L'|'R',blend,runBlend,legDimensions);
       joints['Leg'+side].rotation.x=leg.hip;joints['Shin'+side].rotation.x=leg.knee;joints['Foot'+side].rotation.x=leg.ankle;
-      joints['Arm'+side].rotation.x=-Math.sin(phase+(side==='L'?0:Math.PI)-.2)*(.24+.20*runBlend)*blend;
+      joints['Arm'+side].rotation.x=side==='L'?upper.armL:upper.armR;
       joints['Arm'+side].rotation.z=side==='L'?.06:-.06;
-      joints['Forearm'+side].rotation.x=-.08-.75*runBlend;
+      joints['Forearm'+side].rotation.x=side==='L'?upper.elbowL:upper.elbowR;
     }
     if(interacting>0){interacting=Math.max(0,interacting-dt);joints.ArmR.rotation.x=-.7*Math.sin(interacting/.65*Math.PI);}
     if(joints.Body instanceof THREE.Bone)for(const [name,joint] of Object.entries(joints))if(name!=='Body')joint.quaternion.premultiply(skinAxes).multiply(inverseSkinAxes);

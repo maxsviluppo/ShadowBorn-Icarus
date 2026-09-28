@@ -11,6 +11,6 @@ with bpy.data.libraries.load(os.path.join(ROOT,'art','Traveller-Textured.blend')
 for o in destination.objects:
  if o:bpy.context.collection.objects.link(o)
 rig=bpy.data.objects['Traveller'];rig.location=position
-bpy.context.scene.frame_start=1;bpy.context.scene.frame_end=49;bpy.context.scene.frame_set(1)
-bpy.ops.file.pack_all();bpy.ops.wm.save_as_mainfile(filepath=room_path)
+bpy.context.scene.frame_start=1;bpy.context.scene.frame_end=int(rig.animation_data.action.frame_range[1]);bpy.context.scene.render.fps=60;bpy.context.scene.frame_set(1)
+bpy.ops.file.pack_all();bpy.ops.wm.save_as_mainfile(filepath=room_path,compress=True)
 print('ROOM_CHARACTER_UPDATED')
