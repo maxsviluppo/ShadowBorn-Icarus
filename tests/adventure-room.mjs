@@ -25,3 +25,9 @@ for(const id of Object.keys(targets).filter(id=>id!=='stairs'))assert.ok(gltf.no
 const tex=gltf.images.find(i=>i.name==='room-colour');assert.ok(tex,'original colour atlas');assert.ok(bytes.length<30e6,'bounded web asset size');
 const html=await fs.readFile(new URL('../index.html',import.meta.url),'utf8');assert.ok(html.includes('maximum-scale=1.0,user-scalable=no'));
 console.log(`PASS: ${routes} room route segments, all object approaches, metre-scaled locomotion, five hinges, texture atlas and mobile viewport.`);
+
+// The original room is nearly cubic: guard against flattening only its height.
+const architecture=gltf.nodes.find(n=>n.name==="ArchitectureMesh");
+const bounds=gltf.accessors[gltf.meshes[architecture.mesh].primitives[0].attributes.POSITION];
+const ratio=(bounds.max[0]-bounds.min[0])/(bounds.max[1]-bounds.min[1]);
+assert.ok(ratio>.85&&ratio<1.15,"original room aspect ratio preserved");

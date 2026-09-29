@@ -13,7 +13,8 @@ mesh=source.data
 verts=np.array([v.co[:] for v in mesh.vertices]);faces=np.array([p.vertices[:] for p in mesh.polygons]);centers=verts[faces].mean(axis=1);x,y,z=centers.T
 uvs=np.array([mesh.uv_layers.active.data[p.loop_start+k].uv[:] for p in mesh.polygons for k in range(3)]).reshape((-1,3,2))
 # The raised arched doorway is approximately 2.10 m from threshold to crown.
-SXY=9/.7001;SZ=6.12;FLOOR=.021
+SXY=SZ=6.12;FLOOR=.021
+INTERIOR_XY=6.12/(9/.7001)
 
 def transform(p):
  x,y,z=p;return Vector((-(y+.10104)*SXY,(x+.10061)*SXY,(z-FLOOR)*SZ+.075))
@@ -75,7 +76,7 @@ def solid(name,rgb):
  m=bpy.data.materials.new(name);m.diffuse_color=(*rgb,1);m.use_nodes=True;p=next(n for n in m.node_tree.nodes if n.type=='BSDF_PRINCIPLED');p.inputs['Base Color'].default_value=(*rgb,1);p.inputs['Roughness'].default_value=.9;return m
 wood=solid('Dark interior wood',(.048,.027,.019));paper=solid('Old parchment',(.54,.43,.28));gold=solid('Brass key',(.48,.29,.06))
 def box(name,point,dimensions,material,parent=root,target=None):
- bpy.ops.mesh.primitive_cube_add(size=1,location=transform(point));o=bpy.context.object;o.name=name;o.dimensions=dimensions;bpy.ops.object.transform_apply(location=False,rotation=False,scale=True);o.data.materials.append(material);o.parent=parent
+ bpy.ops.mesh.primitive_cube_add(size=1,location=transform(point));o=bpy.context.object;o.name=name;o.dimensions=(dimensions[0]*INTERIOR_XY,dimensions[1]*INTERIOR_XY,dimensions[2]);bpy.ops.object.transform_apply(location=False,rotation=False,scale=True);o.data.materials.append(material);o.parent=parent
  if parent!=root:o.location-=parent.location
  if target:o['target']=target
  return o
@@ -108,13 +109,13 @@ if not any(o.type=='MESH' and o.find_armature() for o in dst.objects if o):
   if o is not None and o.name not in bpy.context.scene.objects:bpy.context.collection.objects.link(o)
 rig=bpy.data.objects.get('Traveller')
 if rig:
- rig.location=(.7,-1.9,.075)
+ rig.location=(.45,-1.15,.075)
  if rig.animation_data:
   rig.animation_data.action=bpy.data.actions.get('Reference_Idle');bpy.context.scene.frame_set(1)
 s=bpy.context.scene;s.render.engine='CYCLES';s.cycles.samples=8;s.cycles.use_denoising=True;s.render.threads_mode='FIXED';s.render.threads=4;s.render.resolution_x=1200;s.render.resolution_y=1000;s.render.resolution_percentage=100;s.view_settings.view_transform='Standard'
 s.world=bpy.data.worlds.new('Neutral room light');s.world.use_nodes=True;bg=next(n for n in s.world.node_tree.nodes if n.type=='BACKGROUND');bg.inputs[0].default_value=(.32,.36,.43,1);bg.inputs[1].default_value=.65
 for pos,energy,size,color in [((-4,-1,7),650,5,(.78,.85,1)),((2,-5,6),400,6,(1,.88,.73))]:
  bpy.ops.object.light_add(type='AREA',location=pos);l=bpy.context.object;l.data.energy=energy;l.data.shape='DISK';l.data.size=size;l.data.color=color;l.rotation_euler=(Vector((0,0,0))-l.location).to_track_quat('-Z','Y').to_euler()
-bpy.ops.object.camera_add(location=(12,-15,13));cam=bpy.context.object;cam.rotation_euler=(Vector((0,0,1.6))-cam.location).to_track_quat('-Z','Y').to_euler();cam.data.type='ORTHO';cam.data.ortho_scale=15.2;s.camera=cam
+bpy.ops.object.camera_add(location=(12,-15,13));cam=bpy.context.object;cam.rotation_euler=(Vector((0,0,1.6))-cam.location).to_track_quat('-Z','Y').to_euler();cam.data.type='ORTHO';cam.data.ortho_scale=9.2;s.camera=cam
 bpy.data.orphans_purge(do_recursive=True);bpy.ops.file.pack_all();bpy.ops.wm.save_as_mainfile(filepath=os.path.join(ROOT,'art/First-Adventure-Room.blend'),compress=True)
 s.render.filepath=os.path.join(SRC,'adapted-room.png');bpy.ops.render.render(write_still=True)

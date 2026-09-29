@@ -30,7 +30,7 @@ export async function startRoom3D(){
   const fill=new THREE.DirectionalLight(0xffead5,.75);fill.position.set(3,6,5);scene.add(fill);
   const ground=new THREE.Mesh(new THREE.PlaneGeometry(200,200),new THREE.MeshLambertMaterial({color:0x171e28}));ground.rotation.x=-Math.PI/2;ground.position.y=-.51;ground.receiveShadow=false;scene.add(ground);
   const loader=new GLTFLoader();
-  const [roomFile,heroFile]=await Promise.all([loader.loadAsync('/assets/3d/adventure-room.glb?v=0.10.0'),loader.loadAsync('/assets/3d/traveller.glb?v=0.9.2')]);
+  const [roomFile,heroFile]=await Promise.all([loader.loadAsync('/assets/3d/adventure-room.glb?v=0.10.1'),loader.loadAsync('/assets/3d/traveller.glb?v=0.9.2')]);
   const room=roomFile.scene,hero=heroFile.scene;scene.add(room,hero);
   // A continuous palette with a four-band ramp keeps the illustration readable.
   const ramp=new THREE.DataTexture(new Uint8Array([100,165,215,255]),4,1,THREE.RedFormat);ramp.minFilter=THREE.NearestFilter;ramp.magFilter=THREE.NearestFilter;ramp.needsUpdate=true;
@@ -152,7 +152,7 @@ export async function startRoom3D(){
   function reset(){doorUnlocked=false;unlockRemaining=0;audio.stopAll();Object.values(props).forEach(p=>p.reset());motion.reset();pending=null;location=motion.location;path=motion.path;speed=0;yaw=motion.yaw;phase=0;blend=0;runBlend=0;lastTap.time=-1000;hasKey=doorOpen=chestOpen=bookOpen=cabinetOpen=completed=keySelected=false;interacting=0;marker.visible=false;drawRoute();setMode('interact');say('Dovevo ricordarmi qualcosa. Ah, sì. Uscire.');sync();}
   $('reset').onclick=reset;
   window.addEventListener('keydown',e=>{if(e.key==='Escape'){cancel();say('Un momento. Stavo pensando.');}if(e.key.toLowerCase()==='d')toggleDebug();});
-  function resize(){const w=host.clientWidth,h=host.clientHeight;renderer.setSize(w,h);const aspect=w/h,span=Math.max(10.25,13.1/aspect);camera.left=-span*aspect/2;camera.right=span*aspect/2;camera.top=span/2;camera.bottom=-span/2;camera.updateProjectionMatrix();}
+  function resize(){const w=host.clientWidth,h=host.clientHeight;renderer.setSize(w,h);const aspect=w/h,span=Math.max(7.1,7.5/aspect);camera.left=-span*aspect/2;camera.right=span*aspect/2;camera.top=span/2;camera.bottom=-span/2;camera.updateProjectionMatrix();}
   new ResizeObserver(resize).observe(host);resize();loading.remove();
   // Analytic two-link IK: soles follow a planted stance, then lift for the swing.
   // The cycle advances by travelled distance, so acceleration cannot make feet race.
@@ -204,5 +204,5 @@ export async function startRoom3D(){
   }
   // Read-only diagnostics for reproducible end-to-end tests; no alternate game controls.
   (window as unknown as {room3d:unknown}).room3d={snapshot:()=>({location:{...location},state,path:[...path],pending,hasKey,doorOpen,chestOpen,completed,steps:footsteps.played,audio:footsteps.state,walkable:walkable(location),triangles:renderer.info.render.triangles,calls:renderer.info.render.calls}),screen:(p:UV,height=.075)=>{const v=world(p).setY(height).project(camera),r=renderer.domElement.getBoundingClientRect();return{x:r.left+(v.x+1)*r.width/2,y:r.top+(1-v.y)*r.height/2};}};
-  host.dataset.room='0.10.0';sync();host.dataset.ready='true';requestAnimationFrame(tick);
+  host.dataset.room='0.10.1';sync();host.dataset.ready='true';requestAnimationFrame(tick);
 }

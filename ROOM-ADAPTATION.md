@@ -13,3 +13,6 @@ Per rigenerare: inspect-imported-room.py importa il file originale; reduce-impor
 Il viewport, touch-action e gli eventi gesture impediscono pinch/doppio-tap zoom nel gioco su Safari mobile. La verifica sul browser desktop non sostituisce una prova su hardware iPhone/iPad.
 
 Verifiche: npm test include percorsi raggiungibili, collisioni, cerniere, scala locomozione, atlante texture e viewport mobile. Prova web: baule aperto/chiuso e libreria aperta con audio sincronizzato.
+
+## Correzione proporzioni 0.10.1
+La scala ora e uniforme: X=Y=Z=6.12. La stanza originale misura circa 4.28 x 4.28 metri; il personaggio resta alto circa 1.60 metri. Rimossa la precedente dilatazione orizzontale. Aggiornati ingombri, spazio di avvicinamento e inquadratura. La maggiore ampiezza a schermo viene ottenuta con la camera, senza deformare gli arredi.

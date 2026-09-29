@@ -1,8 +1,9 @@
 import type {Block,UV} from './navigation';
-export const ROOM_METRES=9;
+export const ROOM_METRES=.7001*6.12;
+const SCALE=ROOM_METRES/9;
 export const FLOOR_Y=.075;
 export type Target='key'|'table'|'door'|'chest'|'cabinet'|'fireplace'|'window'|'shield'|'banner'|'logs'|'bucket'|'candle'|'rug'|'stairs'|'wall';
-const uv=(x:number,z:number):UV=>({u:x/ROOM_METRES+.5,v:z/ROOM_METRES+.5});
+const uv=(x:number,z:number):UV=>({u:x/9+.5,v:z/9+.5});
 export const targets:Record<Target,{goal:UV;aim:[number,number,number];description:string}>={
  key:{goal:uv(-1.65,.65),aim:[-2.55,.84,1.38],description:'Una chiave di ottone, vicino alla legna.'},
  chest:{goal:uv(-1.70,2.55),aim:[-3.0,.55,2.58],description:'Un baule con coperchio ricurvo. Posso aprirlo e richiuderlo.'},
@@ -32,3 +33,8 @@ export const roomBlocks:Block[]=[
  block('stairs-left-rail',2.20,-4.04,.42,2.11),
  block('stairs-right-rail',3.96,-4.04,.33,2.11),
 ];
+
+// Restore original OBJ proportions; keep approach clearance in real metres.
+for(const target of Object.values(targets)){target.aim[0]*=SCALE;target.aim[2]*=SCALE;}
+for(const id of ["cabinet","table","candle","banner"] as Target[])targets[id].goal.v=.5-.24/ROOM_METRES;
+targets.door.goal.v=.5-1.64/ROOM_METRES;
