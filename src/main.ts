@@ -1,6 +1,10 @@
 import './style.css';
 import {initInterface} from './interface';
 initInterface();
+// Safari gesture events bypass touch-action on older iOS releases.
+for(const type of ['gesturestart','gesturechange','gestureend'])document.addEventListener(type,event=>event.preventDefault(),{passive:false});
+document.addEventListener('touchmove',event=>{if(event.touches.length>1)event.preventDefault();},{passive:false});
+
 if(new URLSearchParams(location.search).get('mode')==='2d'){
   document.querySelector('.map-panel')?.setAttribute('hidden','');
   for(const id of ['open','close','music'])document.getElementById(id)!.hidden=true;

@@ -12,3 +12,7 @@ art/audit*.json
 
 # User high-resolution source and temporary inspection renders stay local.
 art/imported-character/
+
+# Original room supplied by user, retained locally at full resolution.
+art/imported-room/
+.vercel

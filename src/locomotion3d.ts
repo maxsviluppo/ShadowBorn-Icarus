@@ -4,7 +4,7 @@ export const WALK_SPEED=.65*1.10*2;
 export const RUN_SPEED=1.35*2;
 const ACCEL=3.3,BRAKE=4.8,JERK=24,EPS=.001;
 const clamp=(n:number,a:number,b:number)=>Math.max(a,Math.min(b,n));
-const distance=(a:UV,b:UV)=>Math.hypot(a.u-b.u,a.v-b.v)*8;
+
 const heading=(a:UV,b:UV)=>Math.atan2(b.u-a.u,b.v-a.v);
 const delta=(a:number,b:number)=>Math.atan2(Math.sin(b-a),Math.cos(b-a));
 export type MotionState='idle'|'turning'|'walking'|'running'|'braking';
@@ -14,6 +14,9 @@ export type MotionState='idle'|'turning'|'walking'|'running'|'braking';
  * the old safe route. A second click at the same destination upgrades to running.
  */
 export class Locomotion3D{
+  constructor(private metres=8){}
+  private distance(a:UV,b:UV){return Math.hypot(a.u-b.u,a.v-b.v)*this.metres;}
+
   location:UV={u:.70,v:.79};
   path:UV[]=[];
   speed=0;
@@ -29,7 +32,7 @@ export class Locomotion3D{
   go(point:UV,run=false){
     const candidate=findPath(this.location,point);
     if(!candidate)return false;
-    if(this.destination&&distance(this.destination,point)<.12&&!this.stopping){this.running=run;return true;}
+    if(this.destination&&this.distance(this.destination,point)<.12&&!this.stopping){this.running=run;return true;}
     this.destination={...point};
     if(this.speed>.025){this.queued={point:{...point},run};this.stopping=true;}
     else{this.path=candidate;this.running=run;this.queued=null;this.stopping=false;this.revision++;}
@@ -54,9 +57,9 @@ export class Locomotion3D{
     return travelled;
   }
   private integrate(dt:number){
-    while(this.path.length&&distance(this.location,this.path[0])<EPS&&this.speed<.03){this.location={...this.path.shift()!};this.revision++;}
+    while(this.path.length&&this.distance(this.location,this.path[0])<EPS&&this.speed<.03){this.location={...this.path.shift()!};this.revision++;}
     if(!this.path.length){if(this.stopping)this.finishStop();else{this.speed=0;this.acceleration=0;this.state='idle';}return 0;}
-    const target=this.path[0],d=distance(this.location,target),aim=heading(this.location,target),turn=delta(this.yaw,aim);
+    const target=this.path[0],d=this.distance(this.location,target),aim=heading(this.location,target),turn=delta(this.yaw,aim);
     if(this.speed<.025&&Math.abs(turn)>.10){this.speed=0;this.acceleration=0;this.face(aim,dt);return 0;}
     this.face(aim,dt);
     // Brake before a sharp corner as well as before the final destination.
@@ -64,7 +67,7 @@ export class Locomotion3D{
     for(let i=0;i<this.path.length-1;i++){
       const before=i===0?this.location:this.path[i-1];
       if(Math.abs(delta(heading(before,this.path[i]),heading(this.path[i],this.path[i+1])))>.22)break;
-      available+=distance(this.path[i],this.path[i+1]);
+      available+=this.distance(this.path[i],this.path[i+1]);
     }
     // Reserve time for acceleration to settle: this avoids a last-frame hard stop.
     const allowance=BRAKE*.40;

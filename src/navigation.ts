@@ -2,7 +2,7 @@ export type Point = { x: number; y: number };
 export type UV = { u: number; v: number };
 export type Block = { u: number; v: number; w: number; h: number; id: string };
 export const GRID = 56;
-export const RADIUS = .026;
+export let RADIUS = .026;
 // Wall limits include shoulder/backpack clearance, beyond the foot radius.
 export const blocks: Block[] = [
   { id: 'west-wall', u: 0, v: 0, w: .045, h: 1 },
@@ -17,6 +17,8 @@ export const blocks: Block[] = [
   { id: 'right-candle', u: .80, v: .015, w: .055, h: .07 },
   { id: 'chest', u: .37, v: .73, w: .16, h: .12 },
 ];
+/** Install measured room obstacles before creating a 3D route follower. */
+export function configureNavigation(layout:Block[],radius:number){blocks.splice(0,blocks.length,...layout.map(b=>({...b})));RADIUS=radius;}
 export function project({u,v}:UV):Point{return{x:512+(u-v)*410,y:485+(u+v)*207};}
 export function unproject({x,y}:Point):UV{return{u:(y-485)/414+(x-512)/820,v:(y-485)/414-(x-512)/820};}
 export function walkable(p:UV):boolean{return p.u>=RADIUS&&p.v>=RADIUS&&p.u<=1-RADIUS&&p.v<=1-RADIUS&&!blocks.some(b=>p.u>b.u-RADIUS&&p.u<b.u+b.w+RADIUS&&p.v>b.v-RADIUS&&p.v<b.v+b.h+RADIUS);}
