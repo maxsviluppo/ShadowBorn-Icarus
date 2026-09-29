@@ -1,9 +1,8 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
-import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {blocks,walkable,configureNavigation,type UV} from './navigation';
 import {Footsteps} from './footsteps';
-import {solveLeg,advanceGait,bodyHeight,upperBody} from './gait3d';
+import {advanceGait} from './gait3d';
 import {RoomAudio} from './roomAudio';
 import {PropMotion,type PropKind} from './propMotion';
 import {Locomotion3D,WALK_SPEED,RUN_SPEED} from './locomotion3d';
@@ -17,44 +16,27 @@ export async function startRoom3D(){
   const map=$('map-furniture');map.replaceChildren();
   for(const b of blocks){const rect=document.createElementNS('http://www.w3.org/2000/svg','rect');for(const [k,v] of Object.entries({x:b.u*100,y:b.v*100,width:b.w*100,height:b.h*100}))rect.setAttribute(k,String(v));map.append(rect);}
   const loading=document.createElement('div');loading.className='loading-3d';loading.textContent='Ouverture… La stanza prende forma.';host.append(loading);
-  const scene=new THREE.Scene();scene.background=new THREE.Color('#171e28');
-  const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'low-power'});
-  renderer.setPixelRatio(Math.min(devicePixelRatio,1.25));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=true;
+  const scene=new THREE.Scene();scene.background=new THREE.Color('#211b19');
+  const renderer=new THREE.WebGLRenderer({antialias:false,alpha:false,powerPreference:'low-power'});
+  renderer.setPixelRatio(1);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=true;
   renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.NoToneMapping;renderer.toneMappingExposure=1;
-  renderer.domElement.setAttribute('aria-label','Stanza 3D del custode: clicca per camminare o interagire');host.append(renderer.domElement);
+  renderer.domElement.setAttribute('aria-label','Cella di Barnaby: clicca per camminare o interagire');host.append(renderer.domElement);
   const camera=new THREE.OrthographicCamera(-7,7,6,-6,.1,80);
-  camera.position.set(12,13,15);camera.lookAt(0,1.55,0);
-  const hemi=new THREE.HemisphereLight(0xe3edff,0x626878,1.4);scene.add(hemi);
-  const sun=new THREE.DirectionalLight(0xe4edff,1.45);sun.position.set(-5,9,2);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);
+  camera.position.set(10,10,12);camera.lookAt(0,1.15,0);
+  const hemi=new THREE.HemisphereLight(0xfff7ed,0x67615a,1.6);scene.add(hemi);
+  const sun=new THREE.DirectionalLight(0xfff0d9,1.65);sun.position.set(-4,7,-3);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);
   Object.assign(sun.shadow.camera,{left:-7,right:7,top:7,bottom:-7,near:.5,far:25});sun.shadow.bias=-.0004;sun.shadow.normalBias=.035;sun.shadow.radius=3;scene.add(sun);
-  const fill=new THREE.DirectionalLight(0xffead5,.75);fill.position.set(3,6,5);scene.add(fill);
-  const ground=new THREE.Mesh(new THREE.PlaneGeometry(200,200),new THREE.MeshLambertMaterial({color:0x171e28}));ground.rotation.x=-Math.PI/2;ground.position.y=-.51;ground.receiveShadow=false;scene.add(ground);
+  const windowLight=new THREE.PointLight(0xffb453,2.2,3.8,1.7);windowLight.position.set(-2.20,2.18,-1.40);scene.add(windowLight);
+  const fill=new THREE.DirectionalLight(0xe4edff,.65);fill.position.set(3,6,5);scene.add(fill);
+  const ground=new THREE.Mesh(new THREE.PlaneGeometry(200,200),new THREE.MeshLambertMaterial({color:0x211b19}));ground.rotation.x=-Math.PI/2;ground.position.y=-.51;ground.receiveShadow=false;scene.add(ground);
   const loader=new GLTFLoader();
-  const [roomFile,heroFile]=await Promise.all([loader.loadAsync('/assets/3d/adventure-room.glb?v=0.10.1'),loader.loadAsync('/assets/3d/traveller.glb?v=0.9.2')]);
+  const [roomFile,heroFile]=await Promise.all([loader.loadAsync('/assets/3d/prison-cell.glb?v=0.11.0'),loader.loadAsync('/assets/3d/barnaby.glb?v=0.11.0')]);
   const room=roomFile.scene,hero=heroFile.scene;scene.add(room,hero);
-  // A continuous palette with a four-band ramp keeps the illustration readable.
-  const ramp=new THREE.DataTexture(new Uint8Array([100,165,215,255]),4,1,THREE.RedFormat);ramp.minFilter=THREE.NearestFilter;ramp.magFilter=THREE.NearestFilter;ramp.needsUpdate=true;
-  const materials=new Map<string,THREE.MeshToonMaterial>();
-  for(const root of [hero])root.traverse(o=>{if(!(o instanceof THREE.Mesh))return;
-    const old=o.material as THREE.MeshStandardMaterial;
-    let m=materials.get(old.uuid);if(!m){m=new THREE.MeshToonMaterial({color:old.color,map:old.map,normalMap:old.normalMap,normalScale:old.normalScale,gradientMap:ramp,emissive:old.emissive,emissiveIntensity:old.emissiveIntensity??0});materials.set(old.uuid,m);}o.material=m;o.castShadow=true;o.receiveShadow=true;
-  });
-  // Merge leaf meshes at each articulated pivot: preserve the rig, reduce draw calls.
-  function batch(parent:THREE.Object3D){
-    for(const child of [...parent.children])batch(child);
-    const groups=new Map<THREE.Material,THREE.Mesh[]>();
-    for(const child of parent.children)if(child instanceof THREE.Mesh&&!(child instanceof THREE.SkinnedMesh)&&!child.children.length&&!Array.isArray(child.material)){const list=groups.get(child.material)??[];list.push(child);groups.set(child.material,list);}
-    for(const [material,meshes] of groups){if(meshes.length<2)continue;const geometries=meshes.map(mesh=>{mesh.updateMatrix();return mesh.geometry.clone().applyMatrix4(mesh.matrix);});const geometry=mergeGeometries(geometries);geometries.forEach(g=>g.dispose());if(!geometry)continue;const merged=new THREE.Mesh(geometry,material);merged.castShadow=true;merged.receiveShadow=true;parent.add(merged);meshes.forEach(m=>parent.remove(m));}
-  }
-  room.traverse(o=>{if(o instanceof THREE.Mesh){o.castShadow=true;o.receiveShadow=true;}});batch(hero);
-  const node=(name:string)=>{const result=hero.getObjectByName(name);if(!result)throw new Error(`Missing character joint: ${name}`);return result;};
-  const joints=Object.fromEntries(['Body','Torso','Head','Backpack','ArmL','ArmR','ForearmL','ForearmR','LegL','LegR','ShinL','ShinR','FootL','FootR'].map(n=>[n,node(n)]));
-  const rigData=hero.getObjectByName('Traveller')?.userData;
-  const legDimensions=rigData?.gaitUpper?{upper:rigData.gaitUpper as number,lower:rigData.gaitLower as number,stance:rigData.gaitStance as number,idleStance:rigData.gaitIdleStance as number|undefined}:undefined;
-  const bodyDrop=rigData?.gaitDrop as number|undefined??-.105;
-  // Blender skin joints retain Z-up local axes beneath the converted root bone.
-  const skinAxes=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),Math.PI/2);
-  const inverseSkinAxes=skinAxes.clone().invert();
+  hero.traverse(o=>{if(o instanceof THREE.Mesh){o.castShadow=true;o.receiveShadow=false;const mats=Array.isArray(o.material)?o.material:[o.material];for(const m of mats){if(m instanceof THREE.MeshStandardMaterial){m.metalness=0;m.roughness=.95;}if(m instanceof THREE.MeshStandardMaterial&&m.map){m.map.magFilter=THREE.NearestFilter;m.map.minFilter=THREE.LinearMipmapLinearFilter;m.map.generateMipmaps=true;m.map.needsUpdate=true;}}}});
+  room.traverse(o=>{if(o instanceof THREE.Mesh){o.castShadow=true;o.receiveShadow=true;const mats=Array.isArray(o.material)?o.material:[o.material];for(const m of mats)if(m instanceof THREE.MeshStandardMaterial&&m.name==='Warm window'){m.emissive.setRGB(1,.4,.10);m.emissiveIntensity=.85;}}});
+  const mixer=new THREE.AnimationMixer(hero);
+  const animation=(name:string)=>{const clip=THREE.AnimationClip.findByName(heroFile.animations,name);if(!clip)throw new Error(`Missing Barnaby animation: ${name}`);const action=mixer.clipAction(clip);action.play();action.paused=true;return action;};
+  const idleAction=animation('Idle'),walkAction=animation('Walk'),runAction=animation('Run');
   const door=room.getObjectByName('DoorHinge')!,lid=room.getObjectByName('ChestLid')!,key=room.getObjectByName('BrassKey')!;
   const bookCover=room.getObjectByName('BookCover')!,cabinetLeft=room.getObjectByName('CabinetLeft')!,cabinetRight=room.getObjectByName('CabinetRight')!;
   const bookRest=bookCover.quaternion.clone(),leftRest=cabinetLeft.quaternion.clone(),rightRest=cabinetRight.quaternion.clone();
@@ -62,7 +44,7 @@ export async function startRoom3D(){
   // Pick the real textured surfaces; distant objects cannot be clicked through walls.
   const interactiveMeshes:THREE.Mesh[]=[];
   room.traverse(o=>{if(o instanceof THREE.Mesh)interactiveMeshes.push(o);});
-  const terrain=interactiveMeshes.filter(o=>['ArchitectureMesh','RugMesh','StairsMesh'].includes(o.name));
+  const terrain=interactiveMeshes.filter(o=>['CellFloor'].includes(o.name));
   const floorRay=new THREE.Raycaster();
   function heightAt(p:THREE.Vector3){floorRay.set(new THREE.Vector3(p.x,1.18,p.z),new THREE.Vector3(0,-1,0));const hits=floorRay.intersectObjects(terrain,false);return hits.find(h=>h.face&&h.face.normal.y>.45)?.point.y??FLOOR_Y;}
   function rotateProp(object:THREE.Object3D,rest:THREE.Quaternion,value:number){const axis=new THREE.Vector3(...object.userData.axis as [number,number,number]);object.quaternion.copy(rest).multiply(new THREE.Quaternion().setFromAxisAngle(axis,object.userData.openAngle*value));}
@@ -102,8 +84,8 @@ export async function startRoom3D(){
       if(mode==='open'||mode==='close'){say('Questa chiave si raccoglie. Potrà aprire la porta.');return;}
       if(!hasKey){hasKey=true;say('Una chiave! Era qui per un motivo. Probabilmente aprire qualcosa.');}
     }else if(id==='table'){bookOpen=desired(bookOpen);say(bookOpen?'Il registro del custode. Qui annota tutto... tranne dove lascia le chiavi.':'Richiudo il libro. I segreti possono aspettare.');}
-    else if(id==='cabinet'){cabinetOpen=desired(cabinetOpen);say(cabinetOpen?'Le ante inferiori si aprono. Qui il custode conserva le sue cose.':'Richiudo le ante della libreria.');}
-    else if(id==='chest'){chestOpen=desired(chestOpen);say(chestOpen?'Il baule si apre. Il fondo è scuro e profuma di legno antico.':'Richiudo il baule: il coperchio torna al suo posto.');}
+    else if(id==='cabinet'){cabinetOpen=desired(cabinetOpen);say(cabinetOpen?'Le ante inferiori si aprono. Qui il custode conserva le sue cose.':'Richiudo le ante del mobile.');}
+    else if(id==='chest'){chestOpen=desired(chestOpen);say(chestOpen?'Sollevo il coperchio del barile. Sa di legno e di mare.':'Rimetto il coperchio sul barile.');}
     else if(mode==='close'){unlockRemaining=0;audio.stop('lock');doorOpen=false;say('Richiudo la porta. Ancora un momento qui dentro.');}
     else if(!hasKey){say('Chiusa. Potrei bussare... ma sono già dentro.');}
     else if(!doorOpen){
@@ -125,7 +107,7 @@ export async function startRoom3D(){
     if(!hit)return undefined;
     const id=hit.object.userData.target as Target|undefined;
     if(id==='wall'&&hit.point.y<.20)return undefined;
-    if(id==='stairs')return undefined;
+    if(id&&!Object.hasOwn(targets,id))return undefined;
     return id;
   }
   let lastTap={time:-1000,x:0,y:0};
@@ -136,9 +118,7 @@ export async function startRoom3D(){
     if(id){if(mode==='examine'||!['key','table','door','chest','cabinet'].includes(id)){cancel();inspect(id);}else request(targets[id].goal,id,run);}
     else {
       const surface=raycaster.intersectObjects(interactiveMeshes,false)[0];
-      if(surface&&surface.object.userData.target==='stairs'){
-        if(mode==='examine'){cancel();inspect('stairs');}else request(uv(surface.point),null,run);
-      }else if(surface&&surface.point.y>.20){
+      if(surface&&surface.point.y>.20){
         if(mode==='examine'){cancel();inspect('wall');}
       }else if(raycaster.ray.intersectPlane(floorPlane,origin))request(uv(origin),null,run);
     }
@@ -152,31 +132,17 @@ export async function startRoom3D(){
   function reset(){doorUnlocked=false;unlockRemaining=0;audio.stopAll();Object.values(props).forEach(p=>p.reset());motion.reset();pending=null;location=motion.location;path=motion.path;speed=0;yaw=motion.yaw;phase=0;blend=0;runBlend=0;lastTap.time=-1000;hasKey=doorOpen=chestOpen=bookOpen=cabinetOpen=completed=keySelected=false;interacting=0;marker.visible=false;drawRoute();setMode('interact');say('Dovevo ricordarmi qualcosa. Ah, sì. Uscire.');sync();}
   $('reset').onclick=reset;
   window.addEventListener('keydown',e=>{if(e.key==='Escape'){cancel();say('Un momento. Stavo pensando.');}if(e.key.toLowerCase()==='d')toggleDebug();});
-  function resize(){const w=host.clientWidth,h=host.clientHeight;renderer.setSize(w,h);const aspect=w/h,span=Math.max(7.1,7.5/aspect);camera.left=-span*aspect/2;camera.right=span*aspect/2;camera.top=span/2;camera.bottom=-span/2;camera.updateProjectionMatrix();}
+  function resize(){const w=host.clientWidth,h=host.clientHeight;const scale=Math.min(1,480/h);renderer.setSize(Math.round(w*scale),Math.round(h*scale),false);renderer.domElement.style.width=`${w}px`;renderer.domElement.style.height=`${h}px`;renderer.domElement.style.imageRendering="pixelated";const aspect=w/h,span=Math.max(7.4,8.4/aspect);camera.left=-span*aspect/2;camera.right=span*aspect/2;camera.top=span/2;camera.bottom=-span/2;camera.updateProjectionMatrix();}
   new ResizeObserver(resize).observe(host);resize();loading.remove();
-  // Analytic two-link IK: soles follow a planted stance, then lift for the swing.
-  // The cycle advances by travelled distance, so acceleration cannot make feet race.
+  // Play the approved Blender skin/poses, with phase driven by distance travelled.
   function pose(dt:number,moving:boolean){
-    if(joints.Body instanceof THREE.Bone)for(const [name,joint] of Object.entries(joints))if(name!=='Body')joint.rotation.set(0,0,0);
     blend=THREE.MathUtils.damp(blend,moving?Math.min(1,speed/.25):0,7,dt);
     runBlend=THREE.MathUtils.damp(runBlend,THREE.MathUtils.clamp((speed-WALK_SPEED)/(RUN_SPEED-WALK_SPEED),0,1),6,dt);
-    const upper=upperBody(phase,blend,runBlend);
-    joints.Body.position.y=bodyDrop+bodyHeight(phase,blend,runBlend,legDimensions)-(legDimensions?.stance??.51);
-    joints.Torso.rotation.z=upper.sway+Math.sin(elapsed*.9)*.008*(1-blend);
-    joints.Torso.rotation.x=upper.lean+Math.sin(elapsed*1.5)*.007*(1-blend);
-    joints.Torso.rotation.y=upper.twist;
-    joints.Head.rotation.y=Math.sin(elapsed*.8)*.05*(1-blend);
-    joints.Head.rotation.z=-.045+Math.sin(phase-.3)*.025*blend;
-    joints.Backpack.rotation.x=Math.sin(phase-.6)*(.035+.04*runBlend)*blend;
-    for(const side of ['L','R']){
-      const leg=solveLeg(phase,side as 'L'|'R',blend,runBlend,legDimensions);
-      joints['Leg'+side].rotation.x=leg.hip;joints['Shin'+side].rotation.x=leg.knee;joints['Foot'+side].rotation.x=leg.ankle;
-      joints['Arm'+side].rotation.x=side==='L'?upper.armL:upper.armR;
-      joints['Arm'+side].rotation.z=side==='L'?.06:-.06;
-      joints['Forearm'+side].rotation.x=side==='L'?upper.elbowL:upper.elbowR;
-    }
-    if(interacting>0){interacting=Math.max(0,interacting-dt);joints.ArmR.rotation.x=-.7*Math.sin(interacting/.65*Math.PI);}
-    if(joints.Body instanceof THREE.Bone)for(const [name,joint] of Object.entries(joints))if(name!=='Body')joint.quaternion.premultiply(skinAxes).multiply(inverseSkinAxes);
+    const cycle=(phase/(Math.PI*2))%1;
+    idleAction.time=elapsed%idleAction.getClip().duration;
+    walkAction.time=cycle*walkAction.getClip().duration;runAction.time=cycle*runAction.getClip().duration;
+    idleAction.setEffectiveWeight(1-blend);walkAction.setEffectiveWeight(blend*(1-runBlend));runAction.setEffectiveWeight(blend*runBlend);
+    mixer.update(0);interacting=Math.max(0,interacting-dt);
   }
   let last=performance.now(),shadowFrame=0;
   function tick(now:number){requestAnimationFrame(tick);if(document.hidden||now-last<1000/30)return;const animationDt=(now-last)/1000,dt=Math.min(animationDt,.10);last=now;elapsed+=dt;let moving=false;
@@ -204,5 +170,5 @@ export async function startRoom3D(){
   }
   // Read-only diagnostics for reproducible end-to-end tests; no alternate game controls.
   (window as unknown as {room3d:unknown}).room3d={snapshot:()=>({location:{...location},state,path:[...path],pending,hasKey,doorOpen,chestOpen,completed,steps:footsteps.played,audio:footsteps.state,walkable:walkable(location),triangles:renderer.info.render.triangles,calls:renderer.info.render.calls}),screen:(p:UV,height=.075)=>{const v=world(p).setY(height).project(camera),r=renderer.domElement.getBoundingClientRect();return{x:r.left+(v.x+1)*r.width/2,y:r.top+(1-v.y)*r.height/2};}};
-  host.dataset.room='0.10.1';sync();host.dataset.ready='true';requestAnimationFrame(tick);
+  host.dataset.room='0.11.0';host.dataset.character='Barnaby';sync();host.dataset.ready='true';requestAnimationFrame(tick);
 }

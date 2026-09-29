@@ -1,40 +1,27 @@
 import type {Block,UV} from './navigation';
-export const ROOM_METRES=.7001*6.12;
-const SCALE=ROOM_METRES/9;
+export const ROOM_METRES=5.6;
 export const FLOOR_Y=.075;
-export type Target='key'|'table'|'door'|'chest'|'cabinet'|'fireplace'|'window'|'shield'|'banner'|'logs'|'bucket'|'candle'|'rug'|'stairs'|'wall';
-const uv=(x:number,z:number):UV=>({u:x/9+.5,v:z/9+.5});
+export type Target='key'|'table'|'door'|'chest'|'cabinet'|'window'|'bed'|'jug'|'mouse'|'rope'|'skull'|'wall';
+const uv=(x:number,z:number):UV=>({u:x/ROOM_METRES+.5,v:z/ROOM_METRES+.5});
 export const targets:Record<Target,{goal:UV;aim:[number,number,number];description:string}>={
- key:{goal:uv(-1.65,.65),aim:[-2.55,.84,1.38],description:'Una chiave di ottone, vicino alla legna.'},
- chest:{goal:uv(-1.70,2.55),aim:[-3.0,.55,2.58],description:'Un baule con coperchio ricurvo. Posso aprirlo e richiuderlo.'},
- cabinet:{goal:uv(.85,-.90),aim:[.88,1.05,-3.15],description:'Una libreria: libri sugli scaffali e due ante nella parte inferiore.'},
- table:{goal:uv(.65,-.90),aim:[.4,2.9,-3.25],description:'Un vecchio volume verde, sopra la libreria.'},
- door:{goal:uv(3.25,-3.68),aim:[3.25,1.9,-4.02],description:'Una porta ad arco in cima ai gradini. La serratura richiede una chiave.'},
- stairs:{goal:uv(3.25,-2.0),aim:[3.25,.45,-3],description:'Gradini di legno. Conducono alla porta rialzata.'},
- fireplace:{goal:uv(-.20,-.65),aim:[-2,1.1,-2.15],description:'Un camino di pietra. La legna è pronta, ma il fuoco è spento.'},
- window:{goal:uv(-1.7,2.15),aim:[-3.85,2.2,2.7],description:'La luce fredda filtra attraverso i vetri della finestra.'},
- shield:{goal:uv(-1.75,.55),aim:[-3.9,3.1,.7],description:'Uno scudo e armi da parete. Sembrano appartenere al vecchio custode.'},
- banner:{goal:uv(-.1,-.9),aim:[-.8,2.7,-4.05],description:'Un arazzo con uno stemma: forse il simbolo di questa casa.'},
- logs:{goal:uv(-1.65,.65),aim:[-2.9,.55,.52],description:'Legna asciutta nel cestino, accanto al camino.'},
- bucket:{goal:uv(-1.55,3.55),aim:[-3.1,.35,3.9],description:'Un piccolo recipiente per raccogliere la cenere.'},
- candle:{goal:uv(1.6,-.90),aim:[1.5,3,-3.4],description:'Un candeliere antico. La candela è consumata.'},
- rug:{goal:uv(.1,.4),aim:[-1,.12,1],description:'Un tappeto sbiadito interrompe le assi del pavimento.'},
- wall:{goal:uv(.1,.4),aim:[0,2,-4.1],description:'Muri di pietra, travi di legno e molti anni di silenzio.'},
+ key:{goal:uv(.75,1.15),aim:[.95,.12,1.60],description:'Una piccola chiave di ottone, vicino alla corda.'},
+ door:{goal:uv(-1.85,1.03),aim:[-2.50,1.65,1.03],description:'Una porta di quercia, chiusa da una catena e da un teschio di ferro.'},
+ skull:{goal:uv(-1.85,1.03),aim:[-2.38,1.20,.91],description:'Il teschio sul catenaccio sembra sul punto di parlare. Meglio ricordarselo.'},
+ window:{goal:uv(-.85,-1.05),aim:[-2.63,2.22,-1.40],description:'Sbarre robuste. Dalla finestra entra una luce calda, e forse il profumo del mare.'},
+ bed:{goal:uv(-.80,-.30),aim:[-1.80,.64,-1.10],description:'Paglia, una coperta logora e ben poco spazio per i sogni.'},
+ cabinet:{goal:uv(0,-.98),aim:[0,.65,-1.74],description:'Un vecchio mobile di legno. Le due ante si possono aprire.'},
+ table:{goal:uv(.35,-.98),aim:[.24,1.30,-1.92],description:'Un piccolo registro, accanto alla brocca.'},
+ jug:{goal:uv(.35,-.98),aim:[-.20,1.50,-2.18],description:'Una brocca di terracotta e una tazza di metallo.'},
+ chest:{goal:uv(1.55,-1.02),aim:[1.63,1.05,-2.02],description:'Un barile di legno. Posso sollevare il coperchio e richiuderlo.'},
+ mouse:{goal:uv(2.12,-.86),aim:[2.21,.30,-1.27],description:'Un piccolo topo. Pare conoscere questa cella meglio di me.'},
+ rope:{goal:uv(1.60,.64),aim:[1.40,.10,1.35],description:'Una corda abbandonata sul pavimento.'},
+ wall:{goal:uv(0,.3),aim:[0,1.80,-2.64],description:'Pietra consumata, muschio nelle fughe e un silenzio poco rassicurante.'},
 };
-const block=(id:string,x:number,z:number,w:number,h:number):Block=>({id,u:x/9+.5,v:z/9+.5,w:w/9,h:h/9});
+const block=(id:string,x:number,z:number,w:number,h:number):Block=>({id,u:x/ROOM_METRES+.5,v:z/ROOM_METRES+.5,w:w/ROOM_METRES,h:h/ROOM_METRES});
 export const roomBlocks:Block[]=[
- block('west-wall',-4.5,-4.5,.56,9),block('rear-wall',-4.5,-4.5,9,.43),
- block('chest',-3.83,1.36,1.60,2.44),
- block('logs',-3.87,-.45,1.50,1.88),
- block('fireplace',-4.0,-4.07,3.17,3.58),
- block('cabinet',-.49,-4.07,2.83,2.79),
- block('left-bucket',-3.92,3.63,1.04,.65),
- block('right-bucket',-1.12,-3.98,.73,1.15),
- block('stairs-left-rail',2.20,-4.04,.42,2.11),
- block('stairs-right-rail',3.96,-4.04,.33,2.11),
+ block('west-wall',-2.8,-2.8,.27,5.6),block('rear-wall',-2.8,-2.8,5.6,.27),
+ block('bed',-2.45,-2.24,1.35,2.19),
+ block('cabinet-and-doors',-.64,-2.55,1.28,1.23),
+ block('barrel',1.10,-2.56,1.05,1.08),
+ block('mouse',2.05,-1.61,.35,.49),
 ];
-
-// Restore original OBJ proportions; keep approach clearance in real metres.
-for(const target of Object.values(targets)){target.aim[0]*=SCALE;target.aim[2]*=SCALE;}
-for(const id of ["cabinet","table","candle","banner"] as Target[])targets[id].goal.v=.5-.24/ROOM_METRES;
-targets.door.goal.v=.5-1.64/ROOM_METRES;
