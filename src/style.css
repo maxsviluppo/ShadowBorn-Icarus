@@ -14,3 +14,8 @@ html,body{touch-action:pan-y;-webkit-text-size-adjust:100%}#game-container,#game
 @font-face{font-family:AdventurePixel;src:url('/assets/fonts/VT323-Regular.ttf') format('truetype');font-display:swap}.minimal-ui #dialogue{font-family:AdventurePixel,monospace;font-weight:400;font-size:clamp(22px,2.5vw,30px)}
 .minimal-ui .corner-icon svg{mix-blend-mode:lighten;image-rendering:pixelated}.minimal-ui #settings-toggle{width:88px}.minimal-ui #settings-dialog .verbs{display:flex}
 .minimal-ui .corner-icon{mix-blend-mode:lighten;filter:none}.minimal-ui .corner-icon svg{mix-blend-mode:normal}
+/* Keep interaction hit areas invisible, including their browser focus rectangles. */
+.minimal-ui #game-container [data-object],.minimal-ui #game-container [data-object]:focus,.minimal-ui #game-container [data-object]:focus-visible{outline:none!important;stroke:none!important;box-shadow:none!important}
+.minimal-ui .dialogue-panel{bottom:max(16px,env(safe-area-inset-bottom));width:min(700px,calc(100% - 220px));min-height:76px;display:flex;align-items:center;justify-content:center}
+.minimal-ui .inventory{bottom:104px}
+@media(max-width:640px){.minimal-ui .dialogue-panel{bottom:max(12px,env(safe-area-inset-bottom));width:calc(100% - 176px);min-height:60px}.minimal-ui #dialogue{font-size:20px;line-height:1.15}.minimal-ui .inventory{bottom:132px}}
