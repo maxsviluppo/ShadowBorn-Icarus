@@ -5,7 +5,7 @@ export const unprojectCell=({x,y}:Point):UV=>({u:((x-510)*145+(y-280)*335)/91175
 export function contains(p:Point,poly:number[][]){let inside=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const [x,y]=poly[i],[a,b]=poly[j];if((y>p.y)!==(b>p.y)&&p.x<(a-x)*(p.y-y)/(b-y)+x)inside=!inside;}return inside;}
 export const cellBlocks:Block[]=[
  {id:'west-wall',u:0,v:0,w:.035,h:1},{id:'rear-wall',u:0,v:0,w:1,h:.035},
- {id:'bed',u:.015,v:.20,w:.31,h:.46},
+ {id:'bed',u:.015,v:.19,w:.35,h:.50},
  {id:'cabinet',u:.18,v:.015,w:.25,h:.19},
  {id:'barrel',u:.44,v:.015,w:.24,h:.22},
  {id:'mouse',u:.68,v:.035,w:.075,h:.12},
@@ -28,3 +28,9 @@ export const occluders=[
  {depth:.82,poly:[[632,291],[650,276],[682,275],[703,290],[712,345],[700,365],[672,376],[636,359]]},
  {depth:.89,poly:[[315,325],[443,270],[447,254],[466,251],[520,276],[523,350],[394,408],[313,379]]},
 ] as const;
+
+// A long prop must sort by its two ground edges, not by one centre-depth sum.
+export function cellLayerOccludes(id:string,depth:number,p:UV){
+ if(id==='bed'){const b=cellBlocks.find(b=>b.id==='bed')!;return p.u<b.u+b.w&&p.v<b.v+b.h;}
+ return p.u+p.v<depth;
+}
