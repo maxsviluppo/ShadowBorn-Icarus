@@ -24,3 +24,10 @@ html,body{touch-action:pan-y;-webkit-text-size-adjust:100%}#game-container,#game
 /* Quick actions share the bottom dialogue strip between the corner icons. */
 #object-actions{left:50%;top:auto;bottom:max(22px,env(safe-area-inset-bottom));transform:translateX(-50%);max-width:calc(100% - 208px);padding:4px;gap:6px}#object-actions button{min-width:0;width:52px;height:52px;padding:8px;border:1px solid #9d7a4c;background:#392b20}#object-actions svg{width:32px;height:32px}body:has(#object-actions) .dialogue-panel{visibility:hidden}
 @media(max-width:640px){#object-actions{bottom:max(18px,env(safe-area-inset-bottom));max-width:calc(100% - 144px);gap:4px}#object-actions button{width:44px;height:44px;padding:5px}}
+/* Inventory occupies the bottom strip between the bag and diary. */
+.minimal-ui .inventory{left:50%;transform:translateX(-50%);bottom:max(22px,env(safe-area-inset-bottom));width:min(340px,calc(100% - 224px));padding:6px}
+.minimal-ui .inventory-grid{grid-template-columns:repeat(6,minmax(36px,1fr));overflow-x:auto;scrollbar-width:thin}
+.minimal-ui .inventory #empty-bag{display:none}
+.minimal-ui:has(.inventory:not([hidden])) .dialogue-panel{visibility:hidden}
+.minimal-ui:has(#object-actions) .inventory{visibility:hidden}
+@media(max-width:640px){.minimal-ui .inventory{bottom:max(18px,env(safe-area-inset-bottom));width:calc(100% - 184px)}.minimal-ui .inventory-grid{gap:4px}.minimal-ui .inventory .item-slot{height:44px}}
