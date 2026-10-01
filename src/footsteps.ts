@@ -18,7 +18,8 @@ export function stoneStepSamples(rate:number,variant:number):Float32Array{
   return data;
 }
 export class Footsteps{
-  enabled=true;
+  enabled=true;private volume=1;
+  setVolume(v:number){this.volume=Math.max(0,Math.min(1,v));if(this.gain)this.gain.gain.value=.50*this.volume;}
   private context:AudioContext|null=null;
   private gain:GainNode|null=null;
   private buffers:AudioBuffer[]=[];
@@ -30,7 +31,7 @@ export class Footsteps{
     try{
       if(!this.context){
         this.context=new AudioContext({latencyHint:'interactive'});
-        this.gain=this.context.createGain();this.gain.gain.value=.50;this.gain.connect(this.context.destination);
+        this.gain=this.context.createGain();this.gain.gain.value=.50*this.volume;this.gain.connect(this.context.destination);
         this.buffers=Array.from({length:4},(_,i)=>{const samples=stoneStepSamples(this.context!.sampleRate,i),buffer=this.context!.createBuffer(1,samples.length,this.context!.sampleRate);buffer.getChannelData(0).set(samples);return buffer;});
         void Promise.all(Array.from({length:4},async(_,i)=>{const r=await fetch('/assets/audio/step-'+i+'.wav');if(!r.ok)throw Error('step');return this.context!.decodeAudioData(await r.arrayBuffer());})).then(buffers=>{this.buffers=buffers;this.sampled=true;}).catch(()=>{});
       }

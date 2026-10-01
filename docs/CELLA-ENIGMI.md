@@ -33,3 +33,9 @@ La bottiglia vuota si usa direttamente sulla botte. Dopo avvicinamento e orienta
 - Durante un gesto i nuovi spostamenti sono sospesi; Ricomincia annulla il gesto.
 - Bottiglia: campione utente bottlebroken.mp3, avvio a 60 ms per allineare l’impatto.
 - Lente: scontorno Canva MAHWw0Dz15A; icona ricavata dall’anteprima trasparente, vetro al 25% circa di opacità.
+
+## Puntatore, combinazioni e audio
+Il nome del bersaglio segue il puntatore in alto a sinistra. Con un oggetto selezionato mostra Usa X con Y. Maniglia e oggetti piccoli hanno priorità rispetto ai mobili; la sagoma interattiva del mobile segue l’anta aperta.
+Nella borsa, Usa seleziona l’oggetto e un clic su un altro prova la combinazione. Le combinazioni non previste danno una risposta e conservano entrambi gli oggetti e la selezione. Esc annulla. La borsa rimane aperta, con il dialogo sopra gli slot.
+Sottofondo utente sottofondogame.mp3 in loop; regolatori separati effetti 100% e musica 20% all’avvio.
+Chiave inglese scontornata con Canva MAHWyQhd2yc, usata nei menu e nel cursore azione.

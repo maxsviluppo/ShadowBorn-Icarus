@@ -1,18 +1,21 @@
 import type {PropKind} from './propMotion';
 /** Shared material sound library; every instance uses the same family of samples. */
 export class RoomAudio{
-  enabled=true;musicEnabled=true;played=0;last='';ready=false;
+  enabled=true;musicEnabled=true;private effectsVolume=1;private musicVolume=.2;
+  setEffectsVolume(v:number){this.effectsVolume=Math.max(0,Math.min(1,v));if(this.master&&this.ctx)this.master.gain.setTargetAtTime(this.enabled?.65*this.effectsVolume:0,this.ctx.currentTime,.02);}
+  setMusicVolume(v:number){this.musicVolume=Math.max(0,Math.min(1,v));if(this.music)this.music.volume=this.musicVolume;}
+  played=0;last='';ready=false;
   private ctx:AudioContext|null=null;private master:GainNode|null=null;
   private music:HTMLAudioElement|null=null;private buffers=new Map<string,AudioBuffer>();
   private active=new Map<string,{source:AudioBufferSourceNode;gain:GainNode}>();
   private loading:Promise<void>|null=null;
   async unlock(){try{
-    if(!this.ctx){this.ctx=new AudioContext({latencyHint:'interactive'});this.master=this.ctx.createGain();this.master.gain.value=this.enabled?.65:0;this.master.connect(this.ctx.destination);
-      this.music=new Audio('/assets/audio/room-music.mp3');this.music.loop=true;this.music.volume=.16;
+    if(!this.ctx){this.ctx=new AudioContext({latencyHint:'interactive'});this.master=this.ctx.createGain();this.master.gain.value=this.enabled?.65*this.effectsVolume:0;this.master.connect(this.ctx.destination);
+      this.music=new Audio('/assets/audio/game-background.mp3');this.music.loop=true;this.music.volume=this.musicVolume;
       this.loading=Promise.all([...['book','chest','cabinet','door'].flatMap(k=>['open','close'].map(a=>k+'-'+a)),'lock-open','bottle-broken'].map(async id=>{const r=await fetch('/assets/audio/'+id+(id==='bottle-broken'?'.mp3':'.wav'));if(!r.ok)throw Error(id);this.buffers.set(id,await this.ctx!.decodeAudioData(await r.arrayBuffer()));})).then(()=>{this.ready=true;}).catch(()=>{this.ready=false;});
     }
     if(this.ctx.state==='suspended')await this.ctx.resume();
-    if(this.enabled&&this.musicEnabled&&this.music?.paused)void this.music.play().catch(()=>{});
+    if(this.musicEnabled&&this.music?.paused)void this.music.play().catch(()=>{});
   }catch{this.ready=false;}}
   play(kind:PropKind|'lock',open:boolean,duration:number,instance=kind){
     this.stop(instance);if(!this.enabled||duration<.06||this.ctx?.state!=='running'||!this.master)return;
@@ -34,7 +37,7 @@ export class RoomAudio{
     if(!this.enabled||this.ctx?.state!=='running'||!this.master)return;
     const now=this.ctx.currentTime,osc=this.ctx.createOscillator(),gain=this.ctx.createGain();osc.type='triangle';osc.frequency.setValueAtTime(1700,now);osc.frequency.exponentialRampToValueAtTime(320,now+.055);gain.gain.setValueAtTime(.3,now);gain.gain.exponentialRampToValueAtTime(.0001,now+.075);osc.connect(gain);gain.connect(this.master);osc.onended=()=>{osc.disconnect();gain.disconnect();};osc.start(now);osc.stop(now+.08);
   }
-  setEnabled(on:boolean){this.enabled=on;if(this.master&&this.ctx)this.master.gain.setTargetAtTime(on?.65:0,this.ctx.currentTime,.02);if(!on){this.stopAll();this.music?.pause();}else void this.unlock();}
+  setEnabled(on:boolean){this.enabled=on;if(this.master&&this.ctx)this.master.gain.setTargetAtTime(on?.65*this.effectsVolume:0,this.ctx.currentTime,.02);if(!on){this.stopAll();}else void this.unlock();}
   toggleMusic(){this.musicEnabled=!this.musicEnabled;if(!this.musicEnabled)this.music?.pause();else void this.unlock();return this.musicEnabled;}
   get musicPlaying(){return Boolean(this.music&&!this.music.paused);}
   pause(){this.stopAll();this.music?.pause();void this.ctx?.suspend();}

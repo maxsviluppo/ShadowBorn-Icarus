@@ -28,7 +28,7 @@ export async function startPixelCell(){
  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','120 0 780 559');svg.setAttribute('role','group');svg.setAttribute('aria-label','Oggetti della cella');Object.assign(svg.style,{position:'absolute',inset:'0',width:'100%',height:'100%',pointerEvents:'none'});frame.append(svg);
  for(const object of [...cellObjects].reverse()){
   const path=document.createElementNS(svg.namespaceURI,'path');path.setAttribute('d',`M${object.poly.map(p=>p.join(',')).join('L')}Z`);path.setAttribute('fill','transparent');path.setAttribute('role','button');path.setAttribute('tabindex','0');path.setAttribute('aria-label',object.name);path.setAttribute('data-object',object.id);path.setAttribute('style','pointer-events:all;cursor:pointer');
-  path.addEventListener('pointerenter',()=>{(path as SVGElement).style.cursor=cursor(mode==='examine'||object.id==='window'?'lens':object.id==='skull'||object.id==='mouse'?'lens':object.id==='cabinet'?'wrench':'hand');});
+  path.addEventListener('pointerenter',()=>{(path as SVGElement).style.cursor=cursor(mode==='examine'||object.id==='window'?'lens':object.id==='skull'||object.id==='mouse'?'talk':object.id==='cabinet'?'wrench':'hand');});
   const menu=()=>{if(throwing||interaction)return;pending=null;motion.stop();ui.worldMenu(path,object.id,object.description);};
   let hold:ReturnType<typeof setTimeout>|undefined,suppress=false,start={x:0,y:0};
   path.addEventListener('contextmenu',e=>{e.preventDefault();menu();});
@@ -58,13 +58,13 @@ export async function startPixelCell(){
  const poseBones=['LegL','LegR','ShinL','ShinR','FootL','FootR','ArmL','ForearmL'].map(n=>hero.getObjectByName(n)!);
  const arm=hero.getObjectByName('ArmR')!,forearm=hero.getObjectByName('ForearmR')!,torso=hero.getObjectByName('Torso')!;
  let dialogueTimer:ReturnType<typeof setTimeout>|undefined;
- const say=(s:string)=>{const bag=document.getElementById('bag-toggle');if(bag?.getAttribute('aria-expanded')==='true')bag.click();clearTimeout(dialogueTimer);$('dialogue').textContent=s.replace(/[\u00ab\u00bb\u201c\u201d]/g,'');dialogueTimer=setTimeout(()=>{$('dialogue').textContent='';},7000);};
+ const say=(s:string)=>{clearTimeout(dialogueTimer);$('dialogue').textContent=s.replace(/[\u00ab\u00bb\u201c\u201d]/g,'');dialogueTimer=setTimeout(()=>{$('dialogue').textContent='';},7000);};
  const ui=createPuzzleUI(puzzle,say,(id,verb,item)=>{const object=cellObjects.find(o=>o.id===id);if(object)select(object,false,verb,item);});
  function finishInteraction(object:CellObject,verb:Verb,item?:Item){const wasOpen=puzzle.cabinetOpen;const result=ui.execute(object.id,verb,item);if(wasOpen!==puzzle.cabinetOpen)audio.play('cabinet',puzzle.cabinetOpen,.65);say(result||object.description);Object.assign(host.dataset,{lastObject:object.id,cabinetOpen:String(puzzle.cabinetOpen),ropeCollected:String(puzzle.ropeCut),jawGiven:String(puzzle.jawGiven)});}
  function inspect(object:CellObject){
   const kind:InteractionKind|undefined=object.id==='skull'&&pendingItem==='jaw'&&puzzle.has('jaw')&&!puzzle.jawGiven?'give':!pendingItem&&pendingVerb==='interact'&&object.id==='bed'?'sit':!pendingItem&&pendingVerb==='interact'&&object.id==='cabinet'?'cabinet':object.id==='rope'&&!puzzle.ropeCut&&puzzle.has('shard')&&(pendingItem==='shard'||(!pendingItem&&pendingVerb==='cut'))?'cut':undefined;
-  if(kind){interaction={kind,time:0,committed:false,object,verb:pendingVerb,item:pendingItem};motion.stop();ui.clear();return;}
-if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing={time:0,start:null,impact:false};motion.stop();ui.clear();say('Questa volta è vuota. Vediamo se la botte regge.');return;}const wasOpen=puzzle.cabinetOpen;const result=ui.execute(object.id,pendingVerb,pendingItem);if(wasOpen!==puzzle.cabinetOpen)audio.play('cabinet',puzzle.cabinetOpen,.65);say(result||object.description);seen.add(object.id);host.dataset.lastObject=object.id;host.dataset.cabinetOpen=String(puzzle.cabinetOpen);host.dataset.ropeCollected=String(puzzle.ropeCut);host.dataset.jawGiven=String(puzzle.jawGiven);}
+  if(kind){interaction={kind,time:0,committed:false,object,verb:pendingVerb,item:pendingItem};motion.stop();return;}
+if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing={time:0,start:null,impact:false};motion.stop();say('Questa volta è vuota. Vediamo se la botte regge.');return;}const wasOpen=puzzle.cabinetOpen;const result=ui.execute(object.id,pendingVerb,pendingItem);if(wasOpen!==puzzle.cabinetOpen)audio.play('cabinet',puzzle.cabinetOpen,.65);say(result||object.description);seen.add(object.id);host.dataset.lastObject=object.id;host.dataset.cabinetOpen=String(puzzle.cabinetOpen);host.dataset.ropeCollected=String(puzzle.ropeCut);host.dataset.jawGiven=String(puzzle.jawGiven);}
  function select(object:CellObject,run:boolean,verb?:Verb,item?:Item){
   if(throwing||interaction||!puzzle.visible(object.id))return;
   void footsteps.unlock();void audio.unlock();pendingVerb=verb??(mode==='examine'?'examine':ui.defaultVerb(object.id));pendingItem=item??ui.selected;
@@ -79,6 +79,19 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
  $('examine').onclick=()=>{mode='examine';$('examine').classList.add('active');$('interact').classList.remove('active');$('interact').setAttribute('aria-pressed','false');$('examine').setAttribute('aria-pressed','true');};
  $('sound').onclick=()=>{footsteps.toggle();audio.setEnabled(footsteps.enabled);void footsteps.unlock();$('sound').textContent=footsteps.enabled?'Audio: attivo':'Audio: spento';$('sound').setAttribute('aria-pressed',String(footsteps.enabled));};
  $('music').onclick=()=>{const enabled=audio.toggleMusic();$('music').textContent=enabled?'Musica: attiva':'Musica: spenta';$('music').setAttribute('aria-pressed',String(enabled));};
+ const volumes=document.createElement('div');volumes.className='audio-volumes';
+ volumes.innerHTML='<label>Effetti <output id="effects-level">100%</output><input id="effects-volume" aria-label="Volume effetti" type="range" min="0" max="100" value="100"></label><label>Musica <output id="music-level">20%</output><input id="music-volume" aria-label="Volume musica" type="range" min="0" max="100" value="20"></label>';
+ $('settings-dialog').append(volumes);
+ $('effects-volume').oninput=e=>{const v=Number((e.target as HTMLInputElement).value);footsteps.setVolume(v/100);audio.setEffectsVolume(v/100);$('effects-level').textContent=v+'%';void footsteps.unlock();void audio.unlock();};
+ $('music-volume').oninput=e=>{const v=Number((e.target as HTMLInputElement).value);audio.setMusicVolume(v/100);$('music-level').textContent=v+'%';void audio.unlock();};
+ const hint=document.createElement('div');hint.id='pointer-hint';hint.hidden=true;document.body.append(hint);
+ document.addEventListener('pointermove',e=>{const target=(e.target as Element).closest<HTMLElement>('[data-object], [data-item]');
+  if(!target){hint.hidden=true;return;}const name=target.dataset.hoverName||target.getAttribute('aria-label')||'';const using=document.body.dataset.usingLabel;
+  hint.textContent=using?'Usa '+using+' con '+name:name;hint.hidden=false;hint.style.left=Math.max(8,e.clientX-hint.offsetWidth-14)+'px';hint.style.top=Math.max(8,e.clientY-hint.offsetHeight-12)+'px';
+  target.style.cursor=cursor(using?'wrench':target.dataset.item?'hand':mode==='examine'||target.dataset.object==='window'?'lens':target.dataset.object==='skull'||target.dataset.object==='mouse'?'talk':target.dataset.object==='cabinet'?'wrench':'hand');
+ });
+ document.addEventListener('pointerdown',()=>{hint.hidden=true;});document.addEventListener('pointerleave',()=>{hint.hidden=true;});
+
  $('reset').onclick=()=>{throwing=null;interaction=null;motion.reset();pending=null;Object.assign(puzzle,new CellPuzzle());ui.clear();phase=blend=runBlend=0;seen.clear();say('Una porta, una finestra e un topo. Da dove comincio?');};
  $('debug').onclick=()=>{debug=!debug;$('debug').setAttribute('aria-pressed',String(debug));};
  window.addEventListener('keydown',e=>{if(e.key==='Escape'&&!throwing&&!interaction){pending=null;motion.stop();}if(e.key.toLowerCase()==='d')debug=!debug;});
