@@ -1,18 +1,18 @@
-# Cella di Barnaby â€” oggetti e sequenza approvata
+# Cella di Barnaby — oggetti e sequenza approvata
 
 Riferimento: istruzioni di Max, 30 settembre 2026. Immagini originali conservate in `public/assets/pixel/puzzle`; ritaglio e trasparenza applicati solo durante il rendering.
 
 - **Brocca** sul mobile: Esamina e Prendi. Dopo la raccolta, Estrai contenuto dalla borsa aggiunge l'**occhio di cristallo** senza consumare la brocca.
 - **Tazza** sul mobile: Esamina e Prendi; nessun uso successivo definito per ora.
-- **Mobile**: Apri/Chiudi. La **bottiglia di grog** Ã¨ visibile e raccoglibile solo quando aperto.
-- **Strana maniglia**: hotspot separato sull'anta. Esamina segnala forma insolita e viti arrugginite, senza rivelarne la natura. Il teschio dÃ  l'indizio provvisorio della mandibola: soltanto allora nome e descrizione la identificano.
+- **Mobile**: Apri/Chiudi. La **bottiglia di grog** è visibile e raccoglibile solo quando aperto.
+- **Strana maniglia**: hotspot separato sull'anta. Esamina segnala forma insolita e viti arrugginite, senza rivelarne la natura. Il teschio dà l'indizio provvisorio della mandibola: soltanto allora nome e descrizione la identificano.
 - **Grog sulla maniglia**: scioglie la ruggine, lascia una bottiglia vuota. Ora Prendi stacca la maniglia. Consegnata al teschio, scompare dalla borsa e viene indossata; si abilita la risposta parlata provvisoria.
 - **Bottiglia vuota**: dopo il grog sulle viti appare una nuova icona senza liquido. Usa sulla botte la rompe: i frammenti appaiono sulla botte, non nella borsa. Prendi sui frammenti aggiunge un solo vetro tagliente. Il grog ancora pieno viene rifiutato con un avvertimento sui danni corrosivi.
 - **Corda** inchiodata: Prendi a mani nude fallisce. Usa frammento sulla corda (oppure Taglia dopo averlo ottenuto) aggiunge un solo pezzo alla borsa. Il resto inchiodato rimane sul pavimento.
 
 Controlli: clic destro/pressione prolungata sugli oggetti della stanza; clic sugli oggetti nella borsa per Esamina, Usa e azioni speciali. Usa seleziona l'oggetto, poi si clicca il bersaglio nella stanza. Esc annulla. Le azioni fisiche nella stanza attendono l'arrivo di Barnaby.
 
-I testi sono provvisori. Nessun dialogo definitivo, impiego dell'occhio o della tazza, nÃ© sblocco della porta sono stati inventati. Reset riparte dall'inizio; questa demo non salva ancora gli enigmi al ricaricamento.
+I testi sono provvisori. Nessun dialogo definitivo, impiego dell'occhio o della tazza, né sblocco della porta sono stati inventati. Reset riparte dall'inizio; questa demo non salva ancora gli enigmi al ricaricamento.
 
 File mascella ritrovato in `C:/Users/Max/Downloads/Elementi Icaro/maschella.jpg` (non nella radice Downloads).
 
@@ -23,3 +23,13 @@ Ombre di contatto nere sfumate per gli arredi e Barnaby; passi sul posto sincron
 
 ## Lancio sulla botte
 La bottiglia vuota si usa direttamente sulla botte. Dopo avvicinamento e orientamento, gesto del braccio, volo ad arco, impatto sonoro e caduta dei vetri (1,65 secondi). La raccolta si abilita solo a fine animazione. Reset interrompe senza consumare la bottiglia.
+
+
+## Gesti contestuali
+- Letto: Siediti (anche clic semplice), breve riposo e ritorno in piedi.
+- Mobile: piegamento per aprire/chiudere, stato e suono cambiano al contatto.
+- Corda: accovacciamento e taglio solo con frammento disponibile.
+- Mandibola sul teschio: braccio proteso, oggetto in mano e clic al momento dell’aggancio.
+- Durante un gesto i nuovi spostamenti sono sospesi; Ricomincia annulla il gesto.
+- Bottiglia: campione utente bottlebroken.mp3, avvio a 60 ms per allineare l’impatto.
+- Lente: scontorno Canva MAHWw0Dz15A; icona ricavata dall’anteprima trasparente, vetro al 25% circa di opacità.

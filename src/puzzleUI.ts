@@ -33,7 +33,7 @@ export function createPuzzleUI(s:CellPuzzle,say:(text:string)=>void,route:(targe
  const defaultVerb=(id:string):Verb=>['jug','cup','grog','handle','broken'].includes(id)?'take':id==='skull'?'talk':'interact';
  function worldMenu(target:Element,id:string,fallback:string){
   objectActions(target,[{label:'Esamina',icon:'lens',run:()=>say(s.act(id,'examine')||fallback)},
-   {label:id==='cabinet'?(s.cabinetOpen?'Chiudi':'Apri'):id==='skull'?'Parla':defaultVerb(id)==='take'||id==='rope'?'Prendi':'Interagisci',icon:id==='skull'?'talk':'hand',run:()=>route(id,defaultVerb(id))},
+   {label:id==='bed'?'Siediti':id==='cabinet'?(s.cabinetOpen?'Chiudi':'Apri'):id==='skull'?'Parla':defaultVerb(id)==='take'||id==='rope'?'Prendi':'Interagisci',icon:id==='skull'?'talk':'hand',run:()=>route(id,defaultVerb(id))},
    ...(selected?[{label:'Usa '+label(selected),icon:'wrench',run:()=>route(id,'interact',selected)}]:[]),
    ...(id==='rope'?[{label:'Taglia',icon:'wrench',run:()=>route(id,'cut')}]:[])]);
  }
