@@ -2,11 +2,11 @@ import type {CellPuzzle,Item} from './cellPuzzle';
 export const puzzleArt:Record<Item,{file:string;crop:number[];label:string}>={
  jug:{file:'jug',crop:[375,85,280,380],label:'Brocca'},cup:{file:'cup',crop:[380,122,305,308],label:'Tazza'},
  eye:{file:'eye',crop:[310,90,445,380],label:'Occhio di cristallo'},grog:{file:'grog',crop:[365,40,300,475],label:'Bottiglia di grog'},
- bottle:{file:'grog',crop:[365,40,300,475],label:'Bottiglia vuota'},broken:{file:'broken',crop:[222,60,595,450],label:'Bottiglia rotta'},
+ bottle:{file:'bottle-empty',crop:[365,40,300,475],label:'Bottiglia vuota'},broken:{file:'broken',crop:[222,60,595,450],label:'Bottiglia rotta'},
  shard:{file:'shard',crop:[365,120,270,330],label:'Frammento tagliente'},jaw:{file:'jaw',crop:[110,100,775,365],label:'Strana maniglia'},
  rope:{file:'rope',crop:[310,220,425,210],label:'Pezzo di corda'}
 };
-export const puzzleUrl=(file:string)=>file==='rope'?'/assets/pixel/rope-piece.jpg':`/assets/pixel/puzzle/${file}.jpg`;
+export const puzzleUrl=(file:string)=>file==='rope'?'/assets/pixel/rope-piece.jpg':file==='bottle-empty'?'/assets/pixel/puzzle/bottle-empty.png':`/assets/pixel/puzzle/${file}.jpg`;
 export function inventoryArt(id:Item,label:string){const a=puzzleArt[id];return `<svg viewBox="${a.crop.join(' ')}" aria-hidden="true"><image href="${puzzleUrl(a.file)}" width="1024" height="559"/></svg>`;}
 export async function loadPuzzleArt(){
  const images:Record<string,HTMLCanvasElement>={};
@@ -35,5 +35,5 @@ export async function loadPuzzleArt(){
   if(!s.jugTaken)sprite(ctx,'jug',551,181,35,49);
   if(!s.cupTaken)sprite(ctx,'cup',600,214,23,24);
   if(s.cabinetOpen&&!s.grogTaken)sprite(ctx,'grog',565,277,19,31);
- },drawSkull(ctx:CanvasRenderingContext2D,s:CellPuzzle){if(s.jawGiven)sprite(ctx,'jaw',265,313,29,14);}};
+ },drawFragments(ctx:CanvasRenderingContext2D,s:CellPuzzle){if(s.bottleBroken){ctx.save();if(s.shardTaken){ctx.beginPath();ctx.rect(641,275,60,9);ctx.clip();}sprite(ctx,'broken',641,273,60,23);ctx.restore();}},drawSkull(ctx:CanvasRenderingContext2D,s:CellPuzzle){if(s.jawGiven)sprite(ctx,'jaw',265,313,29,14);}};
 }

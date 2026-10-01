@@ -13,7 +13,7 @@ export function createPuzzleUI(s:CellPuzzle,say:(text:string)=>void,route:(targe
   objectActions(button,[{label:'Esamina '+label(id),icon:'lens',run:()=>describe(id)},
    {label:'Usa '+label(id),icon:'hand',run:()=>choose(id)},
    ...(id==='jug'&&!s.eyeFound?[{label:'Estrai contenuto',icon:'wrench',run:()=>actInBag(id,'extract')}]:[]),
-   ...(id==='bottle'?[{label:'Rompi bottiglia',icon:'wrench',run:()=>actInBag(id,'break')}]:[]),
+   
    ...(id==='broken'?[{label:'Prendi frammento',icon:'wrench',run:()=>actInBag(id,'extract')}]:[])]);
  }
  function refresh(){
@@ -30,7 +30,7 @@ export function createPuzzleUI(s:CellPuzzle,say:(text:string)=>void,route:(targe
   }
   document.body.dataset.usingItem=selected??'';
  }
- const defaultVerb=(id:string):Verb=>['jug','cup','grog','handle'].includes(id)?'take':id==='skull'?'talk':'interact';
+ const defaultVerb=(id:string):Verb=>['jug','cup','grog','handle','broken'].includes(id)?'take':id==='skull'?'talk':'interact';
  function worldMenu(target:Element,id:string,fallback:string){
   objectActions(target,[{label:'Esamina',icon:'lens',run:()=>say(s.act(id,'examine')||fallback)},
    {label:id==='cabinet'?(s.cabinetOpen?'Chiudi':'Apri'):id==='skull'?'Parla':defaultVerb(id)==='take'||id==='rope'?'Prendi':'Interagisci',icon:id==='skull'?'talk':'hand',run:()=>route(id,defaultVerb(id))},

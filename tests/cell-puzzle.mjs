@@ -11,11 +11,12 @@ s.act('jug','take');s.act('jug','extract');s.act('jug','extract');s.act('cup','t
 assert.deepEqual(s.inventory,['jug','eye','cup']);assert.equal(s.visible('jug'),false);assert.equal(s.visible('cup'),false);
 s.act('cabinet','interact');assert.equal(s.visible('grog'),true);s.act('grog','take');s.act('grog','break');assert.equal(s.has('grog'),true);
 s.act('rope','interact','grog');assert.equal(s.has('grog'),true,'wrong combination preserves item');
+assert.match(s.act('wall-barrel','interact','grog'),/danni/);assert.equal(s.bottleBroken,false);assert.equal(s.has('grog'),true);
 s.act('handle','interact','grog');assert.equal(s.has('grog'),false);assert.equal(s.has('bottle'),true);
 s.act('handle','take');assert.equal(s.has('jaw'),true);assert.equal(s.jawKnown,false);
 s.act('skull','talk');assert.equal(s.jawKnown,true);assert.match(s.act('handle','examine'),/mandibola/);
 s.act('skull','interact','jaw');assert.equal(s.jawGiven,true);assert.equal(s.has('jaw'),false);
-s.act('bottle','break');assert.equal(s.has('broken'),true);s.act('broken','extract');assert.equal(s.has('shard'),true);assert.equal(s.has('broken'),false);
+s.act('bottle','break');assert.equal(s.has('bottle'),true);assert.equal(s.bottleBroken,false);s.act('wall-barrel','interact','bottle');assert.equal(s.has('bottle'),false);assert.equal(s.visible('broken'),true);assert.equal(s.has('shard'),false);s.act('broken','take');assert.equal(s.has('shard'),true);assert.equal(s.visible('broken'),false);s.act('broken','take');assert.equal(s.inventory.filter(i=>i==='shard').length,1);
 s.act('rope','interact','shard');s.act('rope','cut');assert.equal(s.inventory.filter(i=>i==='rope').length,1);assert.equal(s.ropeCut,true);
 assert.equal(s.has('shard'),true);assert.equal(s.has('jug'),true);assert.equal(s.has('eye'),true);
 console.log('PASS: complete cell puzzle, prerequisites, no duplicates, hidden jaw identity, non-destructive wrong combinations.');

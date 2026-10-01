@@ -19,6 +19,8 @@ export const cellObjects=[
  {id:'handle',name:'Strana maniglia',poly:[[555,289],[580,289],[580,318],[555,318]],goal:{u:.49,v:.30},description:'Una strana maniglia con le viti arrugginite.'},
  {id:'grog',name:'Bottiglia di grog',poly:[[560,273],[587,273],[587,311],[560,311]],goal:{u:.49,v:.30},description:'Una bottiglia di grog.'},
  {id:'cabinet',name:'Mobile',poly:[[527,238],[581,218],[637,240],[636,326],[599,355],[532,323]],goal:{u:.49,v:.30},description:'Un mobile consumato dal tempo, con piccole ante e un ripiano.'},
+ {id:'broken',name:'Frammenti sulla botte',poly:[[642,275],[700,275],[703,295],[640,295]],goal:{u:.72,v:.30},description:'Vetri rotti sulla botte.'},
+ {id:'wall-barrel',name:'Muro sopra la botte',poly:[[641,226],[705,248],[705,270],[641,257]],goal:{u:.72,v:.30},description:'Un muro di pietra sopra la botte.'},
  {id:'barrel',name:'Barile',poly:[[632,291],[650,276],[682,275],[703,290],[712,345],[700,365],[672,376],[636,359]],goal:{u:.72,v:.30},description:'Un barile di legno cerchiato di ferro. Chissà che cosa conteneva.'},
  {id:'mouse',name:'Topo',poly:[[686,328],[699,323],[709,337],[721,325],[732,332],[725,349],[731,364],[717,378],[695,374],[689,356]],goal:{u:.81,v:.22},description:'Il mio compagno di cella. Sembra molto più a suo agio di me.'},
  {id:'bed',name:'Letto',poly:[[315,325],[443,270],[447,254],[466,251],[520,276],[523,350],[394,408],[313,379]],goal:{u:.45,v:.69},description:'Un letto di paglia e una coperta logora. Ho dormito in posti peggiori. Credo.'},
