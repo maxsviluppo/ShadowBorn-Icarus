@@ -24,6 +24,15 @@ export class RoomAudio{
   }
   stop(instance:string){const old=this.active.get(instance);if(old&&this.ctx){const now=this.ctx.currentTime;old.gain.gain.cancelScheduledValues(now);old.gain.gain.setTargetAtTime(0,now,.008);try{old.source.stop(now+.03);}catch{}this.active.delete(instance);}}
   stopAll(){for(const id of [...this.active.keys()])this.stop(id);}
+  glassBreak(){
+    if(!this.enabled||!this.ctx||!this.master||this.ctx.state!=='running')return;
+    const ctx=this.ctx,now=ctx.currentTime;
+    for(const [i,hz] of [1800,2740,3910,5300].entries()){
+      const osc=ctx.createOscillator(),gain=ctx.createGain();osc.type='triangle';osc.frequency.setValueAtTime(hz,now);osc.frequency.exponentialRampToValueAtTime(hz*.65,now+.22);
+      gain.gain.setValueAtTime(.07,now+i*.014);gain.gain.exponentialRampToValueAtTime(.0001,now+.35+i*.035);
+      osc.connect(gain);gain.connect(this.master);osc.onended=()=>{osc.disconnect();gain.disconnect();};osc.start(now+i*.014);osc.stop(now+.55);
+    }
+  }
   setEnabled(on:boolean){this.enabled=on;if(this.master&&this.ctx)this.master.gain.setTargetAtTime(on?.65:0,this.ctx.currentTime,.02);if(!on){this.stopAll();this.music?.pause();}else void this.unlock();}
   toggleMusic(){this.musicEnabled=!this.musicEnabled;if(!this.musicEnabled)this.music?.pause();else void this.unlock();return this.musicEnabled;}
   get musicPlaying(){return Boolean(this.music&&!this.music.paused);}

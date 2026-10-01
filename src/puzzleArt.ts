@@ -10,7 +10,7 @@ export const puzzleUrl=(file:string)=>file==='rope'?'/assets/pixel/rope-piece.jp
 export function inventoryArt(id:Item,label:string){const a=puzzleArt[id];return `<svg viewBox="${a.crop.join(' ')}" aria-hidden="true"><image href="${puzzleUrl(a.file)}" width="1024" height="559"/></svg>`;}
 export async function loadPuzzleArt(){
  const images:Record<string,HTMLCanvasElement>={};
- await Promise.all(['jug','cup','eye','grog','broken','shard','jaw','cabinet-open','cabinet-closed'].map(async file=>{
+ await Promise.all(['jug','cup','eye','grog','bottle-empty','broken','shard','jaw','cabinet-open','cabinet-closed'].map(async file=>{
   const image=new Image();image.src=puzzleUrl(file);await image.decode();
   const c=document.createElement('canvas');c.width=1024;c.height=559;const ctx=c.getContext('2d')!;ctx.drawImage(image,0,0,1024,559);
   // Runtime sprite background key: original supplied JPEGs remain untouched.
@@ -25,7 +25,7 @@ export async function loadPuzzleArt(){
   images[file]=c;
  }));
  function sprite(ctx:CanvasRenderingContext2D,id:Item,x:number,y:number,w:number,h:number){const a=puzzleArt[id];ctx.drawImage(images[a.file],a.crop[0],a.crop[1],a.crop[2],a.crop[3],x,y,w,h);}
- return {draw(ctx:CanvasRenderingContext2D,s:CellPuzzle){
+ return {drawBottle(ctx:CanvasRenderingContext2D,x:number,y:number,rotation:number){ctx.save();ctx.translate(x,y);ctx.rotate(rotation);sprite(ctx,'bottle',-6,-16,12,24);ctx.restore();},draw(ctx:CanvasRenderingContext2D,s:CellPuzzle){
   const source=images[s.cabinetOpen?'cabinet-open':'cabinet-closed'];
   ctx.drawImage(source,376,158,409.6,223.6);
   // Cover the original tiny handle with neighbouring door wood, then place the supplied handle.

@@ -12,7 +12,7 @@ export class CellPuzzle {
    if(!this.has(used))return 'Non ho più questo oggetto.';
    if(used==='grog'&&target==='handle') {this.remove('grog');this.add('bottle');this.rustDissolved=true;return 'Il grog scioglie la ruggine! Ora posso staccare la strana maniglia.';}
    if(used==='grog')return 'Meglio di no! Questo grog è corrosivo: schizzerebbe ovunque e farebbe danni. Devo usarlo con attenzione.';
-   if(used==='bottle'&&target==='wall-barrel'){this.remove('bottle');this.bottleBroken=true;return 'La bottiglia vuota si rompe contro il muro. I frammenti cadono sulla botte.';}
+   if(used==='bottle'&&target==='barrel'){this.remove('bottle');this.bottleBroken=true;return 'La bottiglia vuota si rompe sulla botte. Tra i frammenti ce ne sono di taglienti.';}
    if(used==='jaw'&&target==='skull'){this.remove('jaw');this.jawGiven=true;this.jawKnown=true;return 'Il teschio indossa la mandibola. «Finalmente posso parlare!»';}
    if(used==='shard'&&target==='rope')return this.act('rope','cut');
    return 'Non sembra una buona combinazione.';
@@ -39,7 +39,7 @@ export class CellPuzzle {
   if(target==='handle'&&verb==='take'){if(this.jawTaken)return 'Ho già staccato la maniglia.';if(!this.rustDissolved)return 'Non si muove: le viti sono saldate dalla ruggine.';this.jawTaken=true;this.add('jaw');return this.jawKnown?'Recupero la mandibola del teschio.':'Stacco la strana maniglia e la metto nella borsa.';}
   if(target==='skull'){this.jawKnown=true;return this.jawGiven?'«Che sollievo! Ora possiamo parlare.»':'Il teschio borbotta e indica la bocca: gli serve la mandibola. Quella strana maniglia...';}
   if(target==='grog'&&verb==='break')return 'Meglio di no! Il grog è corrosivo: potrebbe schizzarmi addosso e fare danni.';
-  if(target==='bottle'&&verb==='break')return 'Non nella borsa! Posso usare la bottiglia vuota sul muro sopra la botte.';
+  if(target==='bottle'&&verb==='break')return 'Non nella borsa! Posso usare la bottiglia vuota sulla botte.';
   if(target==='broken'&&(verb==='take'||verb==='extract')&&this.bottleBroken&&!this.shardTaken){this.shardTaken=true;this.add('shard');return 'Recupero con attenzione un frammento tagliente dalla botte.';}
   if(target==='rope'){if(this.ropeCut)return 'Ho già un pezzo di corda.';if(verb!=='cut'||!this.has('shard'))return 'È inchiodata. Mi serve qualcosa di tagliente, non basta tirare.';this.ropeCut=true;this.add('rope');return 'Taglio un pezzo di corda con il vetro e lo metto nella borsa.';}
   return '';

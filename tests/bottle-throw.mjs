@@ -1,0 +1,12 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import ts from 'typescript';
+const code=ts.transpileModule(fs.readFileSync('src/bottleThrow.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.ES2022}}).outputText;
+const {bottleFlight,throwPose,THROW_RELEASE:r,THROW_IMPACT:i,THROW_DURATION:d}=await import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));
+const start={x:600,y:310},end={x:672,y:284};
+assert.deepEqual(bottleFlight(r,start,end),{...start,rotation:0});
+const landing=bottleFlight(i,start,end);assert.equal(landing.x,end.x);assert.equal(landing.y,end.y);
+assert.ok(bottleFlight((r+i)/2,start,end).y<end.y);
+assert.ok(r<i&&i<d);
+for(const v of Object.values(throwPose(d)))assert.equal(Math.abs(v),0);
+console.log('PASS: bottle release, arc, exact impact and neutral recovery.');
