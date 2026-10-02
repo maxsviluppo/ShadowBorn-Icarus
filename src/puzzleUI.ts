@@ -32,7 +32,7 @@ export function createPuzzleUI(s:CellPuzzle,say:(text:string)=>void,route:(targe
   for(const id of ['grog','jug','cup','handle']){const p=document.querySelector('[data-object="'+id+'"]');if(p)p.parentElement?.append(p);}
   document.body.dataset.usingItem=selected??'';document.body.dataset.usingLabel=selected?label(selected):'';
  }
- const defaultVerb=(id:string):Verb=>['jug','cup','grog','handle','broken'].includes(id)?'take':id==='skull'?'talk':'interact';
+ const defaultVerb=(id:string):Verb=>id==='wall-hole'?'examine':['jug','cup','grog','handle','broken'].includes(id)?'take':id==='skull'?'talk':'interact';
  function worldMenu(target:Element,id:string,fallback:string){
   objectActions(target,[{label:'Esamina',icon:'lens',run:()=>say(s.act(id,'examine')||fallback)},
    {label:id==='bed'?'Siediti':id==='cabinet'?(s.cabinetOpen?'Chiudi':'Apri'):id==='skull'?'Parla':defaultVerb(id)==='take'||id==='rope'?'Prendi':'Interagisci',icon:id==='skull'?'talk':'hand',run:()=>route(id,defaultVerb(id))},

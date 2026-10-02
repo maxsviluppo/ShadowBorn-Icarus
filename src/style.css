@@ -35,3 +35,7 @@ html,body{touch-action:pan-y;-webkit-text-size-adjust:100%}#game-container,#game
 
 #pointer-hint{position:fixed;z-index:1000;pointer-events:none;color:#fff2bb;font:14px "PixelDialogue",monospace;text-shadow:1px 1px #18100b,-1px -1px #18100b,1px -1px #18100b,-1px 1px #18100b;max-width:300px;}
 .audio-volumes{display:grid;gap:16px;padding:16px 0}.audio-volumes label{display:grid;grid-template-columns:1fr auto;gap:8px}.audio-volumes input{grid-column:1/-1;width:100%;accent-color:#be9557}
+
+/* SVG hotspots must not receive the browser touch highlight. */
+#game-container, #game-container *, .inventory, .inventory *{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
+#game-container [data-object]:focus:not(:focus-visible){outline:none}

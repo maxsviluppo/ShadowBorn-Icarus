@@ -1,0 +1,23 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import ts from 'typescript';
+const code=ts.transpileModule(fs.readFileSync('src/touchExplore.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.ES2022}}).outputText;
+const {TouchIntent,installTouchExplore}=await import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));
+const tap=new TouchIntent(20,30);tap.move(24,33);assert.equal(tap.tap,true);
+const drag=new TouchIntent(20,30);drag.move(40,30);drag.move(20,30);assert.equal(drag.tap,false);
+const cancelled=new TouchIntent(0,0);cancelled.cancelled=true;assert.equal(cancelled.tap,false);
+console.log('PASS: touch jitter, persistent drag classification, cancelled gesture.');
+
+const handlers={};let actions=0,hovers=0;
+const room={style:{},contains:t=>t===object||t===floor},inventory={style:{},contains:t=>t===item};
+const object={},floor={},item={closest:()=>null};let hit=object;
+globalThis.document={addEventListener:(n,cb)=>(handlers[n]??=[]).push(cb),elementFromPoint:()=>hit};
+globalThis.window={addEventListener:()=>{}};
+installTouchExplore(room,inventory,{hover:t=>{assert.equal(t,hit);hovers++;},hide:()=>{},tap:()=>actions++,hold:()=>false});
+const fire=(type,x=0,id=1,target=object)=>{const e={type,pointerType:'touch',pointerId:id,clientX:x,clientY:0,target,cancelable:true,preventDefault(){},stopImmediatePropagation(){}};for(const cb of handlers[type]??[])cb(e);};
+fire('pointerdown');hit=item;fire('pointermove',30);fire('pointermove',0);fire('pointerup');assert.equal(actions,0);assert.ok(hovers>=3);
+fire('pointerdown',0,1,floor);fire('pointerup',2,1,floor);assert.equal(actions,1);
+fire('pointerdown');fire('pointerdown',0,2);fire('pointerup');fire('pointerup',0,2);assert.equal(actions,1);
+fire('pointerdown');fire('pointercancel');assert.equal(actions,1);
+let prevented=false;for(const cb of handlers.click)cb({detail:1,preventDefault(){prevented=true},stopImmediatePropagation(){}});assert.equal(prevented,true);
+console.log('PASS: drag hit-testing, floor tap, multitouch, cancellation, ghost-click suppression.');

@@ -1,3 +1,4 @@
+import {installTouchExplore} from './touchExplore';
 import {interactionPose,interactionDuration,interactionContact,type InteractionKind} from './interactionMotion';
 import {throwPose,bottleFlight,THROW_RELEASE,THROW_IMPACT,THROW_DURATION} from './bottleThrow';
 import {CellPuzzle,type Item,type Verb} from './cellPuzzle';
@@ -26,17 +27,15 @@ export async function startPixelCell(){
  const frame=document.createElement('div');Object.assign(frame.style,{position:'absolute',left:'50%',top:'50%',transform:'translate(-50%,-50%)'});
  const canvas=document.createElement('canvas');canvas.width=780;canvas.height=559;canvas.setAttribute('aria-label','Cella pixel art: clicca sul pavimento per camminare');Object.assign(canvas.style,{width:'100%',height:'100%',display:'block',imageRendering:'pixelated',touchAction:'none'});frame.append(canvas);host.append(frame);const ctx=canvas.getContext('2d')!;
  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','120 0 780 559');svg.setAttribute('role','group');svg.setAttribute('aria-label','Oggetti della cella');Object.assign(svg.style,{position:'absolute',inset:'0',width:'100%',height:'100%',pointerEvents:'none'});frame.append(svg);
+ const touchMenus=new Map<Element,()=>void>();
  for(const object of [...cellObjects].reverse()){
   const path=document.createElementNS(svg.namespaceURI,'path');path.setAttribute('d',`M${object.poly.map(p=>p.join(',')).join('L')}Z`);path.setAttribute('fill','transparent');path.setAttribute('role','button');path.setAttribute('tabindex','0');path.setAttribute('aria-label',object.name);path.setAttribute('data-object',object.id);path.setAttribute('style','pointer-events:all;cursor:pointer');
-  path.addEventListener('pointerenter',()=>{(path as SVGElement).style.cursor=cursor(mode==='examine'||object.id==='window'?'lens':object.id==='skull'||object.id==='mouse'?'talk':object.id==='cabinet'?'wrench':'hand');});
+  path.addEventListener('pointerenter',()=>{(path as SVGElement).style.cursor=cursor(mode==='examine'||(object.id==='window'||object.id==='wall-hole')?'lens':object.id==='skull'||object.id==='mouse'?'talk':object.id==='cabinet'?'wrench':'hand');});
   const menu=()=>{if(throwing||interaction)return;pending=null;motion.stop();ui.worldMenu(path,object.id,object.description);};
-  let hold:ReturnType<typeof setTimeout>|undefined,suppress=false,start={x:0,y:0};
+  touchMenus.set(path,menu);
   path.addEventListener('contextmenu',e=>{e.preventDefault();menu();});
-  path.addEventListener('pointerdown',e=>{const p=e as PointerEvent;if(p.pointerType==='touch'){suppress=false;start={x:p.clientX,y:p.clientY};hold=setTimeout(()=>{suppress=true;menu();},500);}});
-  path.addEventListener('pointermove',e=>{const p=e as PointerEvent;if(Math.hypot(p.clientX-start.x,p.clientY-start.y)>12)clearTimeout(hold);});
-  for(const type of ['pointerup','pointercancel','pointerleave'])path.addEventListener(type,()=>clearTimeout(hold));
   path.addEventListener('keydown',e=>{if((e as KeyboardEvent).key==='ContextMenu'||((e as KeyboardEvent).shiftKey&&(e as KeyboardEvent).key==='F10')){e.preventDefault();menu();}});
-  path.addEventListener('click',e=>{e.stopPropagation();if(suppress){suppress=false;return;}select(object,objectRun);objectRun=false;});
+  path.addEventListener('click',e=>{e.stopPropagation();select(object,objectRun);objectRun=false;});
   path.addEventListener('keydown',e=>{if(['Enter',' '].includes((e as KeyboardEvent).key)){e.preventDefault();select(object,false);}});svg.append(path);
  }
  const resize=()=>{const scale=Math.min(host.clientWidth/780,host.clientHeight/559);frame.style.width=`${780*scale}px`;frame.style.height=`${559*scale}px`;};new ResizeObserver(resize).observe(host);resize();
@@ -70,10 +69,11 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
   void footsteps.unlock();void audio.unlock();pendingVerb=verb??(mode==='examine'?'examine':ui.defaultVerb(object.id));pendingItem=item??ui.selected;
   if(pendingVerb==='examine'&&!pendingItem){pending=null;motion.stop();inspect(object);}else if(motion.go({...object.goal},run)){pending=object;}else say('Da qui non ci arrivo. Provo a fare il giro.');
  }
- frame.addEventListener('pointerdown',event=>{if(throwing||interaction||event.button!==0)return;void footsteps.unlock();void audio.unlock();const rect=frame.getBoundingClientRect(),point={x:120+(event.clientX-rect.left)*780/rect.width,y:(event.clientY-rect.top)*559/rect.height};const run=event.timeStamp-lastTap.time<350&&Math.hypot(event.clientX-lastTap.x,event.clientY-lastTap.y)<20;lastTap={time:event.timeStamp,x:event.clientX,y:event.clientY};
-  if((event.target as Element).closest('[data-object]')){objectRun=run;return;}
+ function pointAction(event:PointerEvent,touchTarget?:Element){if(throwing||interaction||event.button!==0)return;void footsteps.unlock();void audio.unlock();const rect=frame.getBoundingClientRect(),point={x:120+(event.clientX-rect.left)*780/rect.width,y:(event.clientY-rect.top)*559/rect.height};const run=event.timeStamp-lastTap.time<350&&Math.hypot(event.clientX-lastTap.x,event.clientY-lastTap.y)<20;lastTap={time:event.timeStamp,x:event.clientX,y:event.clientY};
+  const hit=(touchTarget??event.target as Element).closest('[data-object]');if(hit){if(touchTarget){const object=cellObjects.find(o=>o.id===hit.getAttribute('data-object'));if(object)select(object,run);}else objectRun=run;return;}
   const object=cellObjects.find(o=>puzzle.visible(o.id)&&o.id!=='handle'&&contains(point,o.poly.map(p=>[...p])));if(object){select(object,run);return;}const target=unprojectCell(point);if(target.u<0||target.u>1||target.v<0||target.v>1)return;pending=null;if(!motion.go(target,run))say('Qui non posso passare.');
- });
+ }
+ frame.addEventListener('pointerdown',event=>{if(event.pointerType!=='touch')pointAction(event);});
  for(const id of ['open','close'])$(id).hidden=true;
  $('interact').onclick=()=>{mode='interact';$('interact').classList.add('active');$('examine').classList.remove('active');$('interact').setAttribute('aria-pressed','true');$('examine').setAttribute('aria-pressed','false');};
  $('examine').onclick=()=>{mode='examine';$('examine').classList.add('active');$('interact').classList.remove('active');$('interact').setAttribute('aria-pressed','false');$('examine').setAttribute('aria-pressed','true');};
@@ -85,12 +85,25 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
  $('effects-volume').oninput=e=>{const v=Number((e.target as HTMLInputElement).value);footsteps.setVolume(v/100);audio.setEffectsVolume(v/100);$('effects-level').textContent=v+'%';void footsteps.unlock();void audio.unlock();};
  $('music-volume').oninput=e=>{const v=Number((e.target as HTMLInputElement).value);audio.setMusicVolume(v/100);$('music-level').textContent=v+'%';void audio.unlock();};
  const hint=document.createElement('div');hint.id='pointer-hint';hint.hidden=true;document.body.append(hint);
- document.addEventListener('pointermove',e=>{const target=(e.target as Element).closest<HTMLElement>('[data-object], [data-item]');
-  if(!target){hint.hidden=true;return;}const name=target.dataset.hoverName||target.getAttribute('aria-label')||'';const using=document.body.dataset.usingLabel;
-  hint.textContent=using?'Usa '+using+' con '+name:name;hint.hidden=false;hint.style.left=Math.max(8,e.clientX-hint.offsetWidth-14)+'px';hint.style.top=Math.max(8,e.clientY-hint.offsetHeight-12)+'px';
-  target.style.cursor=cursor(using?'wrench':target.dataset.item?'hand':mode==='examine'||target.dataset.object==='window'?'lens':target.dataset.object==='skull'||target.dataset.object==='mouse'?'talk':target.dataset.object==='cabinet'?'wrench':'hand');
+ function showHint(target:Element|null,x:number,y:number,touch=false){
+  const item=target?.closest<HTMLElement>('[data-object], [data-item]');
+  if(!item){hint.hidden=true;return;}
+  const name=item.dataset.hoverName||item.getAttribute('aria-label')||'',using=document.body.dataset.usingLabel;
+  hint.textContent=using?'Usa '+using+' con '+name:name;hint.hidden=false;
+  hint.style.maxWidth=Math.min(300,window.innerWidth-16)+'px';
+  hint.style.left=Math.max(8,Math.min(window.innerWidth-hint.offsetWidth-8,x-hint.offsetWidth-(touch?24:14)))+'px';
+  hint.style.top=Math.max(8,y-hint.offsetHeight-(touch?56:12))+'px';
+  item.style.cursor=cursor(using?'wrench':item.dataset.item?'hand':mode==='examine'||(item.dataset.object==='window'||item.dataset.object==='wall-hole')?'lens':item.dataset.object==='skull'||item.dataset.object==='mouse'?'talk':item.dataset.object==='cabinet'?'wrench':'hand');
+ }
+ document.addEventListener('pointermove',e=>{if(e.pointerType!=='touch')showHint(e.target as Element,e.clientX,e.clientY);});
+ document.addEventListener('pointerdown',e=>{if(e.pointerType!=='touch')hint.hidden=true;});
+ document.addEventListener('pointerleave',()=>{hint.hidden=true;});
+ installTouchExplore(frame,document.querySelector<HTMLElement>('.inventory')!,{
+  hover:(target,e)=>showHint(target,e.clientX,e.clientY,true),
+  hide:()=>{hint.hidden=true;},
+  tap:(target,e)=>{if(frame.contains(target))pointAction(e,target);else (target.closest('button') as HTMLElement|null)?.click();},
+  hold:target=>{const menu=touchMenus.get(target.closest('[data-object]')!);if(menu){menu();return true;}return false;}
  });
- document.addEventListener('pointerdown',()=>{hint.hidden=true;});document.addEventListener('pointerleave',()=>{hint.hidden=true;});
 
  $('reset').onclick=()=>{throwing=null;interaction=null;motion.reset();pending=null;Object.assign(puzzle,new CellPuzzle());ui.clear();phase=blend=runBlend=0;seen.clear();say('Una porta, una finestra e un topo. Da dove comincio?');};
  $('debug').onclick=()=>{debug=!debug;$('debug').setAttribute('aria-pressed',String(debug));};
@@ -98,7 +111,7 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
  document.addEventListener('visibilitychange',()=>{last=performance.now();if(document.hidden)audio.pause();});
  $('map-furniture').replaceChildren();for(const b of cellBlocks){const r=document.createElementNS(svg.namespaceURI,'rect');for(const [k,v] of Object.entries({x:b.u*100,y:b.v*100,width:b.w*100,height:b.h*100}))r.setAttribute(k,String(v));$('map-furniture').append(r);}
  $('goal-key').innerHTML='<span>01</span>Osservare la porta';$('goal-door').innerHTML='<span>02</span>Esplorare il mobile';$('goal-exit').innerHTML='<span>03</span>Osservare la finestra';$('journal-title').textContent='Esplorare la cella';$('journal-dialog').querySelector('p')!.textContent='Guardati intorno. Ogni oggetto può raccontare qualcosa.';$('finish').hidden=true;
- const help=$('help-dialog').querySelectorAll('p');help[0].textContent='Nella borsa: clicca un oggetto per Esamina, Usa o le azioni speciali. Dopo Usa, clicca il bersaglio nella stanza. Esc annulla.';help[1].textContent='Interagisci con un oggetto per avvicinarti e osservarlo. Esamina per guardarlo da dove sei.';help[2].textContent='La borsa in basso a sinistra apre l’inventario (tasto I). Il diario a destra contiene audio, musica, istruzioni e obiettivi. Clic destro su un oggetto per scegliere un’azione; su touch tieni premuto. Il doppio clic resta dedicato alla corsa.';
+ const help=$('help-dialog').querySelectorAll('p');help[0].textContent='Nella borsa: clicca un oggetto per Esamina, Usa o le azioni speciali. Dopo Usa, clicca il bersaglio nella stanza. Esc annulla.';help[1].textContent='Interagisci con un oggetto per avvicinarti e osservarlo. Esamina per guardarlo da dove sei.';help[2].textContent='La borsa in basso a sinistra apre l’inventario (tasto I). Il diario a destra contiene audio, musica, istruzioni e obiettivi. Clic destro su un oggetto per scegliere un’azione; su touch tieni premuto. Scorri il dito per leggere i nomi senza agire; solleva e tocca brevemente per interagire. Il doppio clic resta dedicato alla corsa.';
  say('Una porta, una finestra e un topo. Da dove comincio?');
  function shadow(x:number,y:number,rx:number,ry:number,opacity:number){ctx.save();ctx.translate(x,y);ctx.scale(rx,ry);const g=ctx.createRadialGradient(0,0,.1,0,0,1);g.addColorStop(0,`rgba(0,0,0,${opacity})`);g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,1,0,Math.PI*2);ctx.fill();ctx.restore();}
  function tick(now:number){requestAnimationFrame(tick);if(document.hidden||now-last<1000/30)return;const dt=Math.min((now-last)/1000,.10);last=now;elapsed+=dt;const previousYaw=motion.yaw;const step=motion.step(dt);
