@@ -2,17 +2,33 @@ export type Item='jug'|'cup'|'eye'|'grog'|'bottle'|'broken'|'shard'|'jaw'|'rope'
 export type Verb='examine'|'take'|'interact'|'extract'|'break'|'cut'|'talk';
 export class CellPuzzle {
  inventory:Item[]=[]; cabinetOpen=false; jugTaken=false; cupTaken=false; grogTaken=false;
+ eyeGiven=false; roomComplete=false;
  eyeFound=false; rustDissolved=false; jawTaken=false; jawKnown=false; jawGiven=false; ropeCut=false; bottleBroken=false; shardTaken=false;
  has(id:Item){return this.inventory.includes(id);}
  add(id:Item){if(!this.has(id))this.inventory.push(id);}
  remove(id:Item){this.inventory=this.inventory.filter(i=>i!==id);}
  visible(id:string){return id==='broken'?this.bottleBroken&&!this.shardTaken:id==='jug'?!this.jugTaken:id==='cup'?!this.cupTaken:id==='grog'?this.cabinetOpen&&!this.grogTaken:id==='handle'?!this.jawTaken:true;}
+ exitHint():string {
+  if(!this.jugTaken)return 'Aspetta... quella brocca sul mobile potrebbe tornarmi utile.';
+  if(!this.eyeFound)return 'Nella brocca sentivo tintinnare qualcosa. Meglio controllare il fondo.';
+  if(!this.cupTaken)return 'Meglio non lasciare qui la tazza: fuori potrei averne bisogno.';
+  if(!this.grogTaken)return 'Non ho ancora controllato bene dentro il mobile.';
+  if(!this.rustDissolved)return 'Quelle viti arrugginite... il liquido nella bottiglia potrebbe scioglierle.';
+  if(!this.jawTaken)return 'La strana maniglia ora dovrebbe staccarsi. Torno a prenderla.';
+  if(!this.jawGiven)return 'Al teschio manca ancora qualcosa per parlare.';
+  if(!this.eyeGiven)return 'Il teschio sembra cercare qualcosa con la sua orbita vuota.';
+  if(!this.bottleBroken)return 'La bottiglia vuota potrebbe darmi qualcosa di tagliente, contro la botte.';
+  if(!this.shardTaken)return 'Tra i vetri sulla botte ho visto un frammento utile.';
+  if(!this.ropeCut)return 'Quella corda inchiodata potrebbe servirmi. Ora ho qualcosa per tagliarla.';
+  return '';
+ }
  act(target:string,verb:Verb,used?:Item):string {
   if(used){
    if(!this.has(used))return 'Non ho più questo oggetto.';
    if(used==='grog'&&target==='handle') {this.remove('grog');this.add('bottle');this.rustDissolved=true;return 'Il grog scioglie la ruggine! Ora posso staccare la strana maniglia.';}
    if(used==='grog')return 'Meglio di no! Questo grog è corrosivo: schizzerebbe ovunque e farebbe danni. Devo usarlo con attenzione.';
    if(used==='bottle'&&target==='barrel'){this.remove('bottle');this.bottleBroken=true;return 'La bottiglia vuota si rompe sulla botte. Tra i frammenti ce ne sono di taglienti.';}
+   if(used==='eye'&&target==='skull'){this.remove('eye');this.eyeGiven=true;return 'Inserisco l’occhio di cristallo nell’orbita del teschio. Ora può guardarmi!';}
    if(used==='jaw'&&target==='skull'){this.remove('jaw');this.jawGiven=true;this.jawKnown=true;return 'Il teschio indossa la mandibola. «Finalmente posso parlare!»';}
    if(used==='shard'&&target==='rope')return this.act('rope','cut');
    return 'Non sembra una buona combinazione.';
@@ -31,6 +47,7 @@ export class CellPuzzle {
    if(target==='skull')return this.jawGiven?'Ora il teschio ha di nuovo la sua mandibola.':'Il teschio cerca di dirmi qualcosa, ma gli manca un pezzo.';
    if(target==='cabinet')return this.cabinetOpen?'Un vecchio mobile aperto.':'Un vecchio mobile con una maniglia decisamente strana.';
   }
+  if(target==='door'&&verb!=='examine'){const hint=this.exitHint();if(hint)return hint;this.roomComplete=true;return 'Ho recuperato tutto e aiutato il teschio. Sono pronto a lasciare la cella.';}
   if(target==='cabinet'){this.cabinetOpen=!this.cabinetOpen;return this.cabinetOpen?(this.grogTaken?'Il mobile è vuoto.':'Dentro c’è una bottiglia di grog.'):'Richiudo il mobile.';}
   if(target==='jug'&&verb==='take'){if(this.jugTaken)return 'La brocca è già nella borsa.';this.jugTaken=true;this.add('jug');return 'Prendo la brocca. Qualcosa tintinna dentro: posso estrarlo dalla borsa.';}
   if(target==='jug'&&verb==='extract'){if(!this.has('jug'))return 'Prima devo prendere la brocca.';if(this.eyeFound)return 'La brocca è ormai vuota.';this.eyeFound=true;this.add('eye');return 'Dalla brocca esce un occhio di cristallo! Tengo entrambi.';}

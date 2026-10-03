@@ -61,7 +61,8 @@ export async function startPixelCell(){
  const ui=createPuzzleUI(puzzle,say,(id,verb,item)=>{const object=cellObjects.find(o=>o.id===id);if(object)select(object,false,verb,item);});
  function finishInteraction(object:CellObject,verb:Verb,item?:Item){const wasOpen=puzzle.cabinetOpen;const result=ui.execute(object.id,verb,item);if(wasOpen!==puzzle.cabinetOpen)audio.play('cabinet',puzzle.cabinetOpen,.65);say(result||object.description);Object.assign(host.dataset,{lastObject:object.id,cabinetOpen:String(puzzle.cabinetOpen),ropeCollected:String(puzzle.ropeCut),jawGiven:String(puzzle.jawGiven)});}
  function inspect(object:CellObject){
-  const kind:InteractionKind|undefined=object.id==='skull'&&pendingItem==='jaw'&&puzzle.has('jaw')&&!puzzle.jawGiven?'give':!pendingItem&&pendingVerb==='interact'&&object.id==='bed'?'sit':!pendingItem&&pendingVerb==='interact'&&object.id==='cabinet'?'cabinet':object.id==='rope'&&!puzzle.ropeCut&&puzzle.has('shard')&&(pendingItem==='shard'||(!pendingItem&&pendingVerb==='cut'))?'cut':undefined;
+  if(object.id==='door'&&pendingVerb!=='examine'&&!pendingItem){const hint=puzzle.exitHint();say(ui.execute('door',pendingVerb));if(hint){motion.go({u:.40,v:.78},false);}else{$('finish').hidden=false;($('journal-dialog') as HTMLDialogElement).showModal();}return;}
+  const kind:InteractionKind|undefined=object.id==='skull'&&((pendingItem==='jaw'&&puzzle.has('jaw')&&!puzzle.jawGiven)||(pendingItem==='eye'&&puzzle.has('eye')&&!puzzle.eyeGiven))?'give':!pendingItem&&pendingVerb==='interact'&&object.id==='bed'?'sit':!pendingItem&&pendingVerb==='interact'&&object.id==='cabinet'?'cabinet':object.id==='rope'&&!puzzle.ropeCut&&puzzle.has('shard')&&(pendingItem==='shard'||(!pendingItem&&pendingVerb==='cut'))?'cut':undefined;
   if(kind){interaction={kind,time:0,committed:false,object,verb:pendingVerb,item:pendingItem};motion.stop();return;}
 if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing={time:0,start:null,impact:false};motion.stop();say('Questa volta è vuota. Vediamo se la botte regge.');return;}const wasOpen=puzzle.cabinetOpen;const result=ui.execute(object.id,pendingVerb,pendingItem);if(wasOpen!==puzzle.cabinetOpen)audio.play('cabinet',puzzle.cabinetOpen,.65);say(result||object.description);seen.add(object.id);host.dataset.lastObject=object.id;host.dataset.cabinetOpen=String(puzzle.cabinetOpen);host.dataset.ropeCollected=String(puzzle.ropeCut);host.dataset.jawGiven=String(puzzle.jawGiven);}
  function select(object:CellObject,run:boolean,verb?:Verb,item?:Item){
@@ -105,7 +106,7 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
   hold:target=>{const menu=touchMenus.get(target.closest('[data-object]')!);if(menu){menu();return true;}return false;}
  });
 
- $('reset').onclick=()=>{throwing=null;interaction=null;motion.reset();pending=null;Object.assign(puzzle,new CellPuzzle());ui.clear();phase=blend=runBlend=0;seen.clear();say('Una porta, una finestra e un topo. Da dove comincio?');};
+ $('reset').onclick=()=>{$('finish').hidden=true;throwing=null;interaction=null;motion.reset();pending=null;Object.assign(puzzle,new CellPuzzle());ui.clear();phase=blend=runBlend=0;seen.clear();say('Una porta, una finestra e un topo. Da dove comincio?');};
  $('debug').onclick=()=>{debug=!debug;$('debug').setAttribute('aria-pressed',String(debug));};
  window.addEventListener('keydown',e=>{if(e.key==='Escape'&&!throwing&&!interaction){pending=null;motion.stop();}if(e.key.toLowerCase()==='d')debug=!debug;});
  document.addEventListener('visibilitychange',()=>{last=performance.now();if(document.hidden)audio.pause();});
@@ -122,7 +123,7 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
   blend=THREE.MathUtils.damp(blend,turning?.62:step>.00001?Math.min(1,motion.speed/.25):0,7,dt);runBlend=THREE.MathUtils.damp(runBlend,THREE.MathUtils.clamp((motion.speed-WALK_SPEED)/(RUN_SPEED-WALK_SPEED),0,1),6,dt);
   actions[0].time=elapsed%actions[0].getClip().duration;actions[1].time=(phase/(Math.PI*2)%1)*actions[1].getClip().duration;actions[2].time=(phase/(Math.PI*2)%1)*actions[2].getClip().duration;actions[0].setEffectiveWeight(1-blend);actions[1].setEffectiveWeight(blend*(1-runBlend));actions[2].setEffectiveWeight(blend*runBlend);mixer.update(0);hero.rotation.y=motion.yaw;
   const bodyBase=body.position.clone(),boneBases=poseBones.map(b=>b.quaternion.clone());
-  let seatWeight=0,heldJaw:{x:number;y:number}|null=null;
+  let heldItem:Item='jaw';let seatWeight=0,heldJaw:{x:number;y:number}|null=null;
   const armBase=arm.quaternion.clone(),forearmBase=forearm.quaternion.clone(),torsoBase=torso.quaternion.clone();
   if(throwing){throwing.time+=dt;const pose=throwPose(throwing.time);arm.rotateX(pose.arm);forearm.rotateX(pose.forearm);torso.rotateX(pose.torso);hero.updateMatrixWorld(true);
    const hand=forearm.localToWorld(new THREE.Vector3(0,0,-.20)).project(camera),feet=projectCell(motion.location),h=219.3975,w=h*192/224;
@@ -136,7 +137,7 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
    body.position.y-=p.drop;torso.rotateX(p.torso);arm.rotateX(p.arm);forearm.rotateX(p.forearm);
    poseBones[0].rotateX(p.thigh);poseBones[1].rotateX(p.thigh);poseBones[2].rotateX(p.knee);poseBones[3].rotateX(p.knee);poseBones[4].rotateX(p.ankle);poseBones[5].rotateX(p.ankle);poseBones[6].rotateX(p.arm*.55);poseBones[7].rotateX(p.forearm);
    if(a.kind==='sit')hero.rotation.y+=Math.PI*p.weight;
-   if(a.kind==='give'&&!a.committed){hero.updateMatrixWorld(true);const hand=forearm.localToWorld(new THREE.Vector3(0,0,-.20)).project(camera),feet=projectCell(motion.location);heldJaw={x:feet.x+(hand.x-anchor.x)*219.3975*192/224/2,y:feet.y-(hand.y-anchor.y)*219.3975/2};}
+   if(a.kind==='give'&&!a.committed){heldItem=a.item??'jaw';hero.updateMatrixWorld(true);const hand=forearm.localToWorld(new THREE.Vector3(0,0,-.20)).project(camera),feet=projectCell(motion.location);heldJaw={x:feet.x+(hand.x-anchor.x)*219.3975*192/224/2,y:feet.y-(hand.y-anchor.y)*219.3975/2};}
 
    if(!a.committed&&a.time>=interactionContact[a.kind]){a.committed=true;if(a.kind==='sit')say('Solo un momento di riposo... poi torno a cercare una via d’uscita.');else {finishInteraction(a.object,a.verb,a.item);if(a.kind==='give')audio.click();}}
    if(a.time>=interactionDuration[a.kind])interaction=null;
@@ -150,7 +151,7 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
   if(cellLayerOccludes('cabinet',.52,motion.location))puzzleArt.draw(ctx,puzzle);
   for(const l of visibleLayers)if(!(l.id==='bed'&&seatWeight>0)&&cellLayerOccludes(l.id,l.depth,motion.location))drawCellLayer(ctx,l);
   if(cellLayerOccludes('barrel',.82,motion.location))puzzleArt.drawFragments(ctx,puzzle);
-  if(heldJaw)puzzleArt.drawHeld(ctx,'jaw',heldJaw.x,heldJaw.y);
+  if(heldJaw)puzzleArt.drawHeld(ctx,heldItem,heldJaw.x,heldJaw.y);
   if(throwing&&throwing.start){const t=throwing.time;if(t<THROW_IMPACT){const b=t<THROW_RELEASE?{...throwing.start,rotation:-.25}:bottleFlight(t,throwing.start,{x:672,y:284});puzzleArt.drawBottle(ctx,b.x,b.y,b.rotation);}else{const q=Math.min(1,(t-THROW_IMPACT)/(THROW_DURATION-THROW_IMPACT));for(let i=0;i<12;i++){const a=i*2.399,x=672+Math.cos(a)*(8+17*q),y=284+Math.sin(a)*5-30*Math.sin(q*Math.PI);ctx.fillStyle=i%2?'#b4cac0':'#536f69';ctx.fillRect(Math.round(x),Math.round(y),i%3+2,2);}}}
   if(debug&&motion.path.length){ctx.beginPath();ctx.moveTo(p.x,p.y);for(const q of motion.path){const c=projectCell(q);ctx.lineTo(c.x,c.y);}ctx.strokeStyle='#e6c67a';ctx.lineWidth=1;ctx.stroke();}ctx.restore();
   $('map-player').setAttribute('cx',String(motion.location.u*100));$('map-player').setAttribute('cy',String(motion.location.v*100));$('status').textContent=motion.state==='running'?'Di corsa':motion.state==='walking'?'Un passo alla volta':motion.state==='braking'?'Rallento…':'In esplorazione';
