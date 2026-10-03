@@ -44,7 +44,7 @@ export class CellPuzzle {
    if(target==='wall-barrel')return 'Un muro di pietra robusto, proprio sopra la botte.';
    if(target==='shard')return 'Un frammento di vetro con un bordo molto affilato.';
    if(target==='eye')return 'Un occhio di cristallo, nascosto sul fondo della brocca.';
-   if(target==='skull')return this.jawGiven?'Ora il teschio ha di nuovo la sua mandibola.':'Il teschio cerca di dirmi qualcosa, ma gli manca un pezzo.';
+   if(target==='skull')return this.eyeGiven&&this.jawGiven?'Il teschio ha di nuovo occhio e mandibola. Ora mi guarda e può parlare.':this.eyeGiven?'L’occhio è al suo posto. Gli manca ancora la mandibola.':this.jawGiven?'Ora il teschio ha di nuovo la sua mandibola.':'Il teschio cerca di dirmi qualcosa, ma gli manca un pezzo.';
    if(target==='cabinet')return this.cabinetOpen?'Un vecchio mobile aperto.':'Un vecchio mobile con una maniglia decisamente strana.';
   }
   if(target==='door'&&verb!=='examine'){const hint=this.exitHint();if(hint)return hint;this.roomComplete=true;return 'Ho recuperato tutto e aiutato il teschio. Sono pronto a lasciare la cella.';}

@@ -39,3 +39,13 @@ Il nome del bersaglio segue il puntatore in alto a sinistra. Con un oggetto sele
 Nella borsa, Usa seleziona l’oggetto e un clic su un altro prova la combinazione. Le combinazioni non previste danno una risposta e conservano entrambi gli oggetti e la selezione. Esc annulla. La borsa rimane aperta, con il dialogo sopra gli slot.
 Sottofondo utente sottofondogame.mp3 in loop; regolatori separati effetti 100% e musica 20% all’avvio.
 Chiave inglese scontornata con Canva MAHWyQhd2yc, usata nei menu e nel cursore azione.
+
+
+## Completamento della cella
+L’occhio di cristallo estratto dalla brocca si usa sul teschio: gesto del braccio, clic, rimozione dalla borsa e immagine nell’orbita. Occhio e mandibola si possono consegnare in qualsiasi ordine.
+La porta verifica raccolte e trasformazioni: brocca, occhio estratto, tazza, grog, ruggine sciolta, mandibola recuperata e consegnata, occhio consegnato, bottiglia rotta, frammento recuperato, corda tagliata. Gli oggetti consumati correttamente contano come completati. Se manca qualcosa, mostra un indizio e Barnaby torna verso l’interno lungo un percorso verificato senza collisioni col letto.
+Il diario mostra tre obiettivi aggiornati e il completamento. Per scelta dell’utente, al momento non si passa a una scena successiva.
+I mobili usano i PNG trasparenti forniti, conservati senza modifica in public/assets/pixel/puzzle/cabinet-open.png e cabinet-closed.png.
+
+## Esplorazione touch
+Scorrere il dito mostra il bersaglio sopra il dito senza azioni; un tocco seleziona. Pressione prolungata: menu contestuale. Trascinamenti, multitouch e cancellazioni non generano azioni al rilascio. Il piccolo foro della parete destra è un’area invisibile esaminabile. Disattivato il tap highlight del browser sugli hotspot SVG.

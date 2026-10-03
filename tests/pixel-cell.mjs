@@ -17,3 +17,5 @@ assert.equal(layout.cellLayerOccludes('bed',.89,{u:.20,v:.77}),false,'foot of be
 assert.equal(layout.cellLayerOccludes('bed',.89,{u:.10,v:.10}),true,'bed occludes character only behind its ground edges');
 for(const [a,b] of [[{u:.43,v:.35},{u:.2,v:.77}],[{u:.2,v:.77},{u:.49,v:.30}]]){const route=nav.findPath(a,b);assert.ok(route?.length,'route around bed');let prev=a;for(const q of route){assert.ok(nav.clearSegment(prev,q),'no bed corner clipping');prev=q;}}
 console.log('PASS: bed footprint and front/behind rendering regression.');
+
+const back=nav.findPath({u:.21,v:.77},{u:.40,v:.78});assert.ok(back?.length,'return from door exists');let start={u:.21,v:.77};for(const end of back){assert.ok(nav.clearSegment(start,end),'return stays clear of bed');start=end;}

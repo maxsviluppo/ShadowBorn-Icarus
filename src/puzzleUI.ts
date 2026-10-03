@@ -17,6 +17,10 @@ export function createPuzzleUI(s:CellPuzzle,say:(text:string)=>void,route:(targe
    ...(id==='broken'?[{label:'Prendi frammento',icon:'wrench',run:()=>actInBag(id,'extract')}]:[])]);
  }
  function refresh(){
+  const goals:[string,string,boolean][]=[['goal-key','Recuperare gli oggetti utili',s.jugTaken&&s.cupTaken&&s.shardTaken&&s.ropeCut],['goal-door','Restituire occhio e mandibola al teschio',s.eyeGiven&&s.jawGiven],['goal-exit','Lasciare la cella',s.roomComplete]];
+  goals.forEach(([id,text,done],i)=>{const node=document.getElementById(id)!;node.textContent=(done?'✓ ':String(i+1).padStart(2,'0')+' · ')+text;node.classList.toggle('done',done);});
+  document.getElementById('finish')!.hidden=!s.roomComplete;
+
   grid.replaceChildren();grid.style.gridTemplateColumns=`repeat(${Math.max(6,s.inventory.length)},minmax(36px,1fr))`;
   for(let i=0;i<Math.max(6,s.inventory.length);i++){
    const slot=document.createElement('div');slot.className='item-slot';grid.append(slot);const id=s.inventory[i];if(!id)continue;

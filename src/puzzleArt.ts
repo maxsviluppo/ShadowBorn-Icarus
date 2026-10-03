@@ -30,7 +30,7 @@ export async function loadPuzzleArt(){
   images[file]=c;
  }));
  function sprite(ctx:CanvasRenderingContext2D,id:Item,x:number,y:number,w:number,h:number){const a=puzzleArt[id];ctx.drawImage(images[a.file],a.crop[0],a.crop[1],a.crop[2],a.crop[3],x,y,w,h);}
- return {drawHeld(ctx:CanvasRenderingContext2D,id:Item,x:number,y:number){sprite(ctx,id,x-10,y-5,20,10);},drawBottle(ctx:CanvasRenderingContext2D,x:number,y:number,rotation:number){ctx.save();ctx.translate(x,y);ctx.rotate(rotation);sprite(ctx,'bottle',-6,-16,12,24);ctx.restore();},draw(ctx:CanvasRenderingContext2D,s:CellPuzzle){
+ return {drawHeld(ctx:CanvasRenderingContext2D,id:Item,x:number,y:number){const w=id==='eye'?12:20,h=id==='eye'?11:10;sprite(ctx,id,x-w/2,y-h/2,w,h);},drawBottle(ctx:CanvasRenderingContext2D,x:number,y:number,rotation:number){ctx.save();ctx.translate(x,y);ctx.rotate(rotation);sprite(ctx,'bottle',-6,-16,12,24);ctx.restore();},draw(ctx:CanvasRenderingContext2D,s:CellPuzzle){
   const source=images[s.cabinetOpen?'cabinet-open':'cabinet-closed'];
   ctx.drawImage(source,376,158,409.6,223.6);
   // Cover the original tiny handle with neighbouring door wood, then place the supplied handle.
