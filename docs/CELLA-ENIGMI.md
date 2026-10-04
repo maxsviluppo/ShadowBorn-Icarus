@@ -49,3 +49,11 @@ I mobili usano i PNG trasparenti forniti, conservati senza modifica in public/as
 
 ## Esplorazione touch
 Scorrere il dito mostra il bersaglio sopra il dito senza azioni; un tocco seleziona. Pressione prolungata: menu contestuale. Trascinamenti, multitouch e cancellazioni non generano azioni al rilascio. Il piccolo foro della parete destra è un’area invisibile esaminabile. Disattivato il tap highlight del browser sugli hotspot SVG.
+
+
+## Dialogo del teschio — aggiornamento 5 ottobre
+Dialoghi basati sull’allegato dell’utente: incontro senza pezzi, occhio senza mandibola, ricomposizione, tre indovinelli, rivelazione. Il riferimento al dente d’oro è adattato ai due oggetti esistenti (occhio e mandibola); nessun oggetto aggiuntivo inventato.
+Le risposte corrette restano B / C / B come richiesto. Ogni errore mostra la relativa battuta, azzera il conteggio e cambia l’ordine delle domande. Le opzioni conservano la loro lettera. La prova richiede entrambi i pezzi; consegnarli nell’ordine inverso è supportato.
+Le battute si avanzano con Continua e il dialogo può essere sospeso. Se si interrompe la rivelazione, questa viene riproposta prima di abilitare il passaggio. La porta principale resta sempre bloccata.
+Dopo la rivelazione, il Piccolo foro diventa Passaggio segreto. Usare la tazza, dopo tutti gli altri passaggi, esegue tre clic distanziati di 850 ms e completa la cella. Codice provvisorio confermato dall’utente: tre colpi lenti. Non è collegata una scena successiva.
+Verifiche automatiche: prerequisiti, risposte, shuffle effettivo, reset progressi dopo errore, ordine alternativo dei pezzi, rivelazione e uscita. La prova visiva nel browser non è stata ripetuta dopo il blocco di policy precedente.

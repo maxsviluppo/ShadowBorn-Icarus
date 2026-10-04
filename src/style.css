@@ -39,3 +39,10 @@ html,body{touch-action:pan-y;-webkit-text-size-adjust:100%}#game-container,#game
 /* SVG hotspots must not receive the browser touch highlight. */
 #game-container, #game-container *, .inventory, .inventory *{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
 #game-container [data-object]:focus:not(:focus-visible){outline:none}
+
+#skull-conversation{position:fixed;inset:auto 0 max(12px,env(safe-area-inset-bottom));margin:0 auto;width:min(760px,94vw);max-height:70dvh;overflow:auto;background:#16120fed;border:1px solid #796044;color:#fff0c0;padding:18px;font:18px/1.5 "PixelDialogue",monospace;text-shadow:1px 1px #000}
+#skull-conversation::backdrop{background:#0002}
+#skull-conversation p{margin:0 0 14px}
+#skull-conversation button{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;min-height:44px;border:1px solid #715b3d;background:#30251c;color:#fff0c0;font:inherit}
+#skull-conversation button:hover,#skull-conversation button:focus-visible{background:#59412a;outline:2px solid #ebcc86}
+@media(max-width:600px){#skull-conversation{font-size:15px;padding:12px;max-height:75dvh}}

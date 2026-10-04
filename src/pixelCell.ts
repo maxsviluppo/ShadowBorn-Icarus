@@ -1,3 +1,4 @@
+import {createSkullDialogue} from './skullDialogueUI';
 import {installTouchExplore} from './touchExplore';
 import {interactionPose,interactionDuration,interactionContact,type InteractionKind} from './interactionMotion';
 import {throwPose,bottleFlight,THROW_RELEASE,THROW_IMPACT,THROW_DURATION} from './bottleThrow';
@@ -31,7 +32,7 @@ export async function startPixelCell(){
  for(const object of [...cellObjects].reverse()){
   const path=document.createElementNS(svg.namespaceURI,'path');path.setAttribute('d',`M${object.poly.map(p=>p.join(',')).join('L')}Z`);path.setAttribute('fill','transparent');path.setAttribute('role','button');path.setAttribute('tabindex','0');path.setAttribute('aria-label',object.name);path.setAttribute('data-object',object.id);path.setAttribute('style','pointer-events:all;cursor:pointer');
   path.addEventListener('pointerenter',()=>{(path as SVGElement).style.cursor=cursor(mode==='examine'||(object.id==='window'||object.id==='wall-hole')?'lens':object.id==='skull'||object.id==='mouse'?'talk':object.id==='cabinet'?'wrench':'hand');});
-  const menu=()=>{if(throwing||interaction)return;pending=null;motion.stop();ui.worldMenu(path,object.id,object.description);};
+  const menu=()=>{if(throwing||interaction||skullDialogue.active||knocking)return;pending=null;motion.stop();ui.worldMenu(path,object.id,object.description);};
   touchMenus.set(path,menu);
   path.addEventListener('contextmenu',e=>{e.preventDefault();menu();});
   path.addEventListener('keydown',e=>{if((e as KeyboardEvent).key==='ContextMenu'||((e as KeyboardEvent).shiftKey&&(e as KeyboardEvent).key==='F10')){e.preventDefault();menu();}});
@@ -52,6 +53,7 @@ export async function startPixelCell(){
  const mixer=new THREE.AnimationMixer(hero);const actions=['Idle','Walk','Run'].map(name=>{const clip=THREE.AnimationClip.findByName(file.animations,name);if(!clip)throw new Error('Missing animation '+name);const a=mixer.clipAction(clip);a.play();a.paused=true;return a;});
  const motion=new Locomotion3D(CELL_METRES),footsteps=new Footsteps(),audio=new RoomAudio();let objectRun=false;let pending:CellObject|null=null,mode:'interact'|'examine'='interact',phase=0,blend=0,runBlend=0,elapsed=0,last=performance.now(),debug=false,lastTap={time:-1000,x:0,y:0};const seen=new Set<string>();let pendingVerb:Verb='interact',pendingItem:Item|undefined;
  let interaction:{kind:InteractionKind;time:number;committed:boolean;object:CellObject;verb:Verb;item?:Item}|null=null;
+ let knocking:{time:number;hits:number}|null=null;
  let throwing:{time:number;start:{x:number;y:number}|null;impact:boolean}|null=null;
  const body=hero.getObjectByName('Body')!;
  const poseBones=['LegL','LegR','ShinL','ShinR','FootL','FootR','ArmL','ForearmL'].map(n=>hero.getObjectByName(n)!);
@@ -59,18 +61,21 @@ export async function startPixelCell(){
  let dialogueTimer:ReturnType<typeof setTimeout>|undefined;
  const say=(s:string)=>{clearTimeout(dialogueTimer);$('dialogue').textContent=s.replace(/[\u00ab\u00bb\u201c\u201d]/g,'');dialogueTimer=setTimeout(()=>{$('dialogue').textContent='';},7000);};
  const ui=createPuzzleUI(puzzle,say,(id,verb,item)=>{const object=cellObjects.find(o=>o.id===id);if(object)select(object,false,verb,item);});
+ const skullDialogue=createSkullDialogue(puzzle,()=>ui.refresh());
  function finishInteraction(object:CellObject,verb:Verb,item?:Item){const wasOpen=puzzle.cabinetOpen;const result=ui.execute(object.id,verb,item);if(wasOpen!==puzzle.cabinetOpen)audio.play('cabinet',puzzle.cabinetOpen,.65);say(result||object.description);Object.assign(host.dataset,{lastObject:object.id,cabinetOpen:String(puzzle.cabinetOpen),ropeCollected:String(puzzle.ropeCut),jawGiven:String(puzzle.jawGiven),eyeGiven:String(puzzle.eyeGiven)});}
  function inspect(object:CellObject){
-  if(object.id==='door'&&pendingVerb!=='examine'&&!pendingItem){const hint=puzzle.exitHint();say(ui.execute('door',pendingVerb));if(hint){motion.go({u:.40,v:.78},false);}else{$('finish').hidden=false;($('journal-dialog') as HTMLDialogElement).showModal();}return;}
+  if(object.id==='skull'&&pendingVerb!=='examine'&&!pendingItem){motion.stop();clearTimeout(dialogueTimer);$('dialogue').textContent='';skullDialogue.open();return;}
+  if(object.id==='wall-hole'&&pendingItem==='cup'&&puzzle.has('cup')&&puzzle.secretRevealed){const hint=puzzle.exitHint();if(hint){say(hint);motion.go({u:.70,v:.65});}else{motion.stop();knocking={time:0,hits:0};}return;}
+  if(object.id==='door'&&pendingVerb!=='examine'&&!pendingItem){say(ui.execute('door',pendingVerb));motion.go({u:.40,v:.78},false);return;}
   const kind:InteractionKind|undefined=object.id==='skull'&&((pendingItem==='jaw'&&puzzle.has('jaw')&&!puzzle.jawGiven)||(pendingItem==='eye'&&puzzle.has('eye')&&!puzzle.eyeGiven))?'give':!pendingItem&&pendingVerb==='interact'&&object.id==='bed'?'sit':!pendingItem&&pendingVerb==='interact'&&object.id==='cabinet'?'cabinet':object.id==='rope'&&!puzzle.ropeCut&&puzzle.has('shard')&&(pendingItem==='shard'||(!pendingItem&&pendingVerb==='cut'))?'cut':undefined;
   if(kind){interaction={kind,time:0,committed:false,object,verb:pendingVerb,item:pendingItem};motion.stop();return;}
 if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing={time:0,start:null,impact:false};motion.stop();say('Questa volta è vuota. Vediamo se la botte regge.');return;}const wasOpen=puzzle.cabinetOpen;const result=ui.execute(object.id,pendingVerb,pendingItem);if(wasOpen!==puzzle.cabinetOpen)audio.play('cabinet',puzzle.cabinetOpen,.65);say(result||object.description);seen.add(object.id);host.dataset.lastObject=object.id;host.dataset.cabinetOpen=String(puzzle.cabinetOpen);host.dataset.ropeCollected=String(puzzle.ropeCut);host.dataset.jawGiven=String(puzzle.jawGiven);}
  function select(object:CellObject,run:boolean,verb?:Verb,item?:Item){
-  if(throwing||interaction||!puzzle.visible(object.id))return;
+  if(throwing||interaction||skullDialogue.active||knocking||!puzzle.visible(object.id))return;
   void footsteps.unlock();void audio.unlock();pendingVerb=verb??(mode==='examine'?'examine':ui.defaultVerb(object.id));pendingItem=item??ui.selected;
   if(pendingVerb==='examine'&&!pendingItem){pending=null;motion.stop();inspect(object);}else if(motion.go({...object.goal},run)){pending=object;}else say('Da qui non ci arrivo. Provo a fare il giro.');
  }
- function pointAction(event:PointerEvent,touchTarget?:Element){if(throwing||interaction||event.button!==0)return;void footsteps.unlock();void audio.unlock();const rect=frame.getBoundingClientRect(),point={x:120+(event.clientX-rect.left)*780/rect.width,y:(event.clientY-rect.top)*559/rect.height};const run=event.timeStamp-lastTap.time<350&&Math.hypot(event.clientX-lastTap.x,event.clientY-lastTap.y)<20;lastTap={time:event.timeStamp,x:event.clientX,y:event.clientY};
+ function pointAction(event:PointerEvent,touchTarget?:Element){if(throwing||interaction||skullDialogue.active||knocking||event.button!==0)return;void footsteps.unlock();void audio.unlock();const rect=frame.getBoundingClientRect(),point={x:120+(event.clientX-rect.left)*780/rect.width,y:(event.clientY-rect.top)*559/rect.height};const run=event.timeStamp-lastTap.time<350&&Math.hypot(event.clientX-lastTap.x,event.clientY-lastTap.y)<20;lastTap={time:event.timeStamp,x:event.clientX,y:event.clientY};
   const hit=(touchTarget??event.target as Element).closest('[data-object]');if(hit){if(touchTarget){const object=cellObjects.find(o=>o.id===hit.getAttribute('data-object'));if(object)select(object,run);}else objectRun=run;return;}
   const object=cellObjects.find(o=>puzzle.visible(o.id)&&o.id!=='handle'&&contains(point,o.poly.map(p=>[...p])));if(object){select(object,run);return;}const target=unprojectCell(point);if(target.u<0||target.u>1||target.v<0||target.v>1)return;pending=null;if(!motion.go(target,run))say('Qui non posso passare.');
  }
@@ -106,12 +111,12 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
   hold:target=>{const menu=touchMenus.get(target.closest('[data-object]')!);if(menu){menu();return true;}return false;}
  });
 
- $('reset').onclick=()=>{$('finish').hidden=true;throwing=null;interaction=null;motion.reset();pending=null;Object.assign(puzzle,new CellPuzzle());ui.clear();phase=blend=runBlend=0;seen.clear();say('Una porta, una finestra e un topo. Da dove comincio?');};
+ $('reset').onclick=()=>{knocking=null;skullDialogue.reset();$('finish').hidden=true;throwing=null;interaction=null;motion.reset();pending=null;Object.assign(puzzle,new CellPuzzle());ui.clear();phase=blend=runBlend=0;seen.clear();say('Una porta, una finestra e un topo. Da dove comincio?');};
  $('debug').onclick=()=>{debug=!debug;$('debug').setAttribute('aria-pressed',String(debug));};
  window.addEventListener('keydown',e=>{if(e.key==='Escape'&&!throwing&&!interaction){pending=null;motion.stop();}if(e.key.toLowerCase()==='d')debug=!debug;});
  document.addEventListener('visibilitychange',()=>{last=performance.now();if(document.hidden)audio.pause();});
  $('map-furniture').replaceChildren();for(const b of cellBlocks){const r=document.createElementNS(svg.namespaceURI,'rect');for(const [k,v] of Object.entries({x:b.u*100,y:b.v*100,width:b.w*100,height:b.h*100}))r.setAttribute(k,String(v));$('map-furniture').append(r);}
- $('journal-title').textContent='Il diario della cella';$('journal-dialog').querySelector('p')!.textContent='Prima di partire, recupera gli oggetti utili e aiuta il teschio della porta.';$('finish').querySelector('strong')!.textContent='Cella completata';$('finish').querySelector('p')!.textContent='Hai completato gli enigmi della cella. La prossima scena deve ancora essere collegata.';ui.refresh();
+ $('journal-title').textContent='Il diario della cella';$('journal-dialog').querySelector('p')!.textContent='Prima di partire, recupera gli oggetti utili e aiuta il teschio della porta.';$('finish').querySelector('strong')!.textContent='Cella completata';$('finish').querySelector('p')!.textContent='Hai aiutato il teschio, superato i tre indovinelli e trovato il passaggio segreto. Cella completata.';ui.refresh();
  const help=$('help-dialog').querySelectorAll('p');help[0].textContent='Nella borsa: clicca un oggetto per Esamina, Usa o le azioni speciali. Dopo Usa, clicca il bersaglio nella stanza. Esc annulla.';help[1].textContent='Interagisci con un oggetto per avvicinarti e osservarlo. Esamina per guardarlo da dove sei.';help[2].textContent='La borsa in basso a sinistra apre l’inventario (tasto I). Il diario a destra contiene audio, musica, istruzioni e obiettivi. Clic destro su un oggetto per scegliere un’azione; su touch tieni premuto. Scorri il dito per leggere i nomi senza agire; solleva e tocca brevemente per interagire. Il doppio clic resta dedicato alla corsa.';
  say('Una porta, una finestra e un topo. Da dove comincio?');
  function shadow(x:number,y:number,rx:number,ry:number,opacity:number){ctx.save();ctx.translate(x,y);ctx.scale(rx,ry);const g=ctx.createRadialGradient(0,0,.1,0,0,1);g.addColorStop(0,`rgba(0,0,0,${opacity})`);g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,1,0,Math.PI*2);ctx.fill();ctx.restore();}
@@ -139,9 +144,10 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
    if(a.kind==='sit')hero.rotation.y+=Math.PI*p.weight;
    if(a.kind==='give'&&!a.committed){heldItem=a.item??'jaw';hero.updateMatrixWorld(true);const hand=forearm.localToWorld(new THREE.Vector3(0,0,-.20)).project(camera),feet=projectCell(motion.location);heldJaw={x:feet.x+(hand.x-anchor.x)*219.3975*192/224/2,y:feet.y-(hand.y-anchor.y)*219.3975/2};}
 
-   if(!a.committed&&a.time>=interactionContact[a.kind]){a.committed=true;if(a.kind==='sit')say('Solo un momento di riposo... poi torno a cercare una via d’uscita.');else {finishInteraction(a.object,a.verb,a.item);if(a.kind==='give')audio.click();}}
-   if(a.time>=interactionDuration[a.kind])interaction=null;
+   if(!a.committed&&a.time>=interactionContact[a.kind]){a.committed=true;if(a.kind==='sit')say('Solo un momento di riposo... poi torno a cercare una via d’uscita.');else {finishInteraction(a.object,a.verb,a.item);if(a.kind==='give'){audio.click();clearTimeout(dialogueTimer);$('dialogue').textContent='';}}}
+   if(a.time>=interactionDuration[a.kind]){interaction=null;if(a.kind==='give')skullDialogue.open(a.item as 'eye'|'jaw');}
   }
+  if(knocking){knocking.time+=dt;if(knocking.hits<3&&knocking.time>=knocking.hits*.85){audio.click();knocking.hits++;}if(knocking.time>=2.4){knocking=null;say(ui.execute('wall-hole','interact','cup'));($('journal-dialog') as HTMLDialogElement).showModal();}}
   host.dataset.action=interaction?interaction.kind:throwing?(throwing.time<THROW_RELEASE?'windup':throwing.time<THROW_IMPACT?'bottle-flight':'glass-falling'):'';
   host.dataset.actionTime=interaction?.time.toFixed(2)??'';
   renderer.render(scene,camera);

@@ -1,0 +1,15 @@
+import fs from 'node:fs';import assert from 'node:assert/strict';import ts from 'typescript';
+const load=async path=>import('data:text/javascript;base64,'+Buffer.from(ts.transpileModule(fs.readFileSync(path,'utf8'),{compilerOptions:{module:ts.ModuleKind.ES2022,target:ts.ScriptTarget.ES2022}}).outputText).toString('base64'));
+const {CellPuzzle}=await load('src/cellPuzzle.ts');const {SkullTrial,phaseLines,riddles,revelation}=await load('src/skullDialogue.ts');
+const s=new CellPuzzle(),q=new SkullTrial(s,()=>.99);
+assert.equal(q.answer(1),'blocked');assert.equal(s.riddlesPassed,false);assert.match(phaseLines(s)[1].text,/Bbl/);assert.equal(s.jawKnown,false);
+s.eyeGiven=true;assert.match(phaseLines(s)[0].text,/maniglia/);assert.equal(s.jawKnown,true);assert.equal(q.answer(1),'blocked');
+s.jawGiven=true;assert.match(phaseLines(s)[0].text,/indovinelli/);
+assert.equal(q.answer(1),'correct');const before=q.order.join();assert.equal(q.answer(0),'wrong');assert.equal(q.index,0);assert.notEqual(q.order.join(),before);assert.deepEqual([...q.order].sort(),[0,1,2]);
+assert.equal(q.answer(99),'blocked');
+for(let i=0;i<3;i++)assert.equal(q.answer(q.current.correct),i===2?'won':'correct');
+assert.equal(s.riddlesPassed,true);assert.equal(s.secretRevealed,false,'must hear revelation');assert.equal(q.answer(0),'blocked');
+s.secretRevealed=true;assert.match(phaseLines(s)[0].text,/tre colpi lenti/);assert.equal(revelation.length,4);
+assert.deepEqual(riddles.map(r=>r.correct),[1,2,1]);
+const jawFirst=new CellPuzzle();jawFirst.jawGiven=true;assert.match(phaseLines(jawFirst)[0].text,/occhio/);
+console.log('PASS: both delivery orders, no premature trial, answers B/C/B, error shuffle with reset, no duplicate win, revelation gating.');

@@ -17,7 +17,7 @@ export function createPuzzleUI(s:CellPuzzle,say:(text:string)=>void,route:(targe
    ...(id==='broken'?[{label:'Prendi frammento',icon:'wrench',run:()=>actInBag(id,'extract')}]:[])]);
  }
  function refresh(){
-  const goals:[string,string,boolean][]=[['goal-key','Recuperare gli oggetti utili',s.jugTaken&&s.cupTaken&&s.shardTaken&&s.ropeCut],['goal-door','Restituire occhio e mandibola al teschio',s.eyeGiven&&s.jawGiven],['goal-exit','Lasciare la cella',s.roomComplete]];
+  const goals:[string,string,boolean][]=[['goal-key','Recuperare gli oggetti utili',s.jugTaken&&s.cupTaken&&s.shardTaken&&s.ropeCut],['goal-door','Restituire occhio e mandibola al teschio',s.eyeGiven&&s.jawGiven],['goal-exit','Risolvere gli indovinelli e aprire il passaggio',s.roomComplete]];
   goals.forEach(([id,text,done],i)=>{const node=document.getElementById(id)!;node.textContent=(done?'✓ ':String(i+1).padStart(2,'0')+' · ')+text;node.classList.toggle('done',done);});
   document.getElementById('finish')!.hidden=!s.roomComplete;
 
@@ -30,6 +30,7 @@ export function createPuzzleUI(s:CellPuzzle,say:(text:string)=>void,route:(targe
   }
   for(const path of document.querySelectorAll<SVGElement>('[data-object]')){
    const id=path.dataset.object!;path.style.display=s.visible(id)?'':'none';
+   if(id==='wall-hole')path.setAttribute('aria-label',s.secretRevealed?'Passaggio segreto':'Piccolo foro');
    if(id==='cabinet')path.setAttribute('d',s.cabinetOpen?'M492,265L527,245L581,218L637,240L636,326L599,355L532,323L495,336Z':'M527,238L581,218L637,240L636,326L599,355L532,323Z');
    if(id==='handle'){path.setAttribute('aria-label',s.jawKnown?'Mandibola':'Strana maniglia');const x=s.cabinetOpen?501:555;path.setAttribute('d',`M${x},289h25v29h-25Z`);}
   }

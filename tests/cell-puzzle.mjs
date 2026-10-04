@@ -25,11 +25,11 @@ assert.match(s.exitHint(),/orbita/);
 s.act('door','interact');assert.equal(s.roomComplete,false);
 s.act('skull','interact','eye');assert.equal(s.eyeGiven,true);assert.equal(s.has('eye'),false);
 const inv=[...s.inventory];s.act('skull','interact','eye');assert.deepEqual(s.inventory,inv);
-assert.equal(s.exitHint(),'');s.act('door','examine');assert.equal(s.roomComplete,false);
-s.act('door','interact');assert.equal(s.roomComplete,true);
-for(const field of ['jugTaken','eyeFound','cupTaken','grogTaken','rustDissolved','jawTaken','jawGiven','eyeGiven','bottleBroken','shardTaken','ropeCut']){
+assert.match(s.exitHint(),/indovinelli/);s.riddlesPassed=true;s.secretRevealed=true;assert.equal(s.exitHint(),'');s.act('door','examine');assert.equal(s.roomComplete,false);
+s.act('door','interact');assert.equal(s.roomComplete,false,'main door stays barred');s.act('wall-hole','interact','cup');assert.equal(s.roomComplete,true);
+for(const field of ['jugTaken','eyeFound','cupTaken','grogTaken','rustDissolved','jawTaken','jawGiven','eyeGiven','bottleBroken','shardTaken','ropeCut','riddlesPassed','secretRevealed']){
  const incomplete=Object.assign(new CellPuzzle(),s,{inventory:[...s.inventory],roomComplete:false,[field]:false});
- assert.ok(incomplete.exitHint(),field+' produces a hint');incomplete.act('door','interact');assert.equal(incomplete.roomComplete,false,field+' prevents exit');
+ assert.ok(incomplete.exitHint(),field+' produces a hint');incomplete.act('wall-hole','interact','cup');assert.equal(incomplete.roomComplete,false,field+' prevents exit');
 }
 const early=new CellPuzzle();early.act('skull','interact','eye');assert.equal(early.eyeGiven,false);
 early.act('jug','take');early.act('jug','extract');early.act('skull','interact','eye');assert.equal(early.eyeGiven,true);assert.equal(early.jawGiven,false);
