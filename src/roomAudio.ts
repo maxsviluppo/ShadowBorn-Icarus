@@ -12,7 +12,7 @@ export class RoomAudio{
   async unlock(){try{
     if(!this.ctx){this.ctx=new AudioContext({latencyHint:'interactive'});this.master=this.ctx.createGain();this.master.gain.value=this.enabled?.65*this.effectsVolume:0;this.master.connect(this.ctx.destination);
       this.music=new Audio('/assets/audio/game-background.mp3');this.music.loop=true;this.music.volume=this.musicVolume;
-      this.loading=Promise.all([...['book','chest','cabinet','door'].flatMap(k=>['open','close'].map(a=>k+'-'+a)),'lock-open','bottle-broken'].map(async id=>{const r=await fetch('/assets/audio/'+id+(id==='bottle-broken'?'.mp3':'.wav'));if(!r.ok)throw Error(id);this.buffers.set(id,await this.ctx!.decodeAudioData(await r.arrayBuffer()));})).then(()=>{this.ready=true;}).catch(()=>{this.ready=false;});
+      this.loading=Promise.all([...['book','chest','cabinet','door'].flatMap(k=>['open','close'].map(a=>k+'-'+a)),'lock-open','bottle-broken','mouse-squeak'].map(async id=>{const r=await fetch('/assets/audio/'+id+(id==='bottle-broken'?'.mp3':'.wav'));if(!r.ok)throw Error(id);this.buffers.set(id,await this.ctx!.decodeAudioData(await r.arrayBuffer()));})).then(()=>{this.ready=true;}).catch(()=>{this.ready=false;});
     }
     if(this.ctx.state==='suspended')await this.ctx.resume();
     if(this.musicEnabled&&this.music?.paused)void this.music.play().catch(()=>{});
@@ -32,6 +32,11 @@ export class RoomAudio{
     const buffer=this.buffers.get('bottle-broken');if(!buffer)return;
     const source=this.ctx.createBufferSource(),gain=this.ctx.createGain();source.buffer=buffer;gain.gain.value=.85;source.connect(gain);gain.connect(this.master);
     this.stop('glass');this.active.set('glass',{source,gain});source.onended=()=>{source.disconnect();gain.disconnect();if(this.active.get('glass')?.source===source)this.active.delete('glass');};source.start(0,.06);this.played++;this.last='bottle-broken';
+  }
+  mouseSqueak(){
+    if(!this.enabled||this.ctx?.state!=='running'||!this.master)return;
+    const buffer=this.buffers.get('mouse-squeak');if(!buffer)return;
+    this.stop('mouse');const source=this.ctx.createBufferSource(),gain=this.ctx.createGain();source.buffer=buffer;gain.gain.value=.18;source.connect(gain);gain.connect(this.master);this.active.set('mouse',{source,gain});source.onended=()=>{source.disconnect();gain.disconnect();if(this.active.get('mouse')?.source===source)this.active.delete('mouse');};source.start();
   }
   click(){
     if(!this.enabled||this.ctx?.state!=='running'||!this.master)return;

@@ -26,7 +26,7 @@ export async function startPixelCell(){
  const background=new Image();background.src='/assets/pixel/cell-transparent.png';
  const revealedBackground=new Image();revealedBackground.src='/assets/pixel/cell-secret-door.png';
  const layers=(await loadCellLayers()).filter(l=>!l.id.startsWith('cabinet'));const puzzle=new CellPuzzle(),puzzleArt=await loadPuzzleArt();
- const [file]=await Promise.all([new GLTFLoader().loadAsync('/assets/3d/barnaby.glb?v=0.11.0'),background.decode(),revealedBackground.decode()]);
+ const [file]=await Promise.all([new GLTFLoader().loadAsync('/assets/3d/prisoner.glb?v=0.14.0'),background.decode(),revealedBackground.decode()]);
  const backdrop=document.createElement('canvas');backdrop.width=1024;backdrop.height=559;const bg=backdrop.getContext('2d')!;bg.imageSmoothingEnabled=false;bg.drawImage(background,0,0,1024,559);
  const frame=document.createElement('div');Object.assign(frame.style,{position:'absolute',left:'50%',top:'50%',transform:'translate(-50%,-50%)'});
  const canvas=document.createElement('canvas');canvas.width=780;canvas.height=559;canvas.setAttribute('aria-label','Cella pixel art: clicca sul pavimento per camminare');Object.assign(canvas.style,{width:'100%',height:'100%',display:'block',imageRendering:'pixelated',touchAction:'none'});frame.append(canvas);host.append(frame);const ctx=canvas.getContext('2d')!;
@@ -70,7 +70,7 @@ export async function startPixelCell(){
  const skullDialogue=createSkullDialogue(puzzle,()=>ui.refresh());
  function finishInteraction(object:CellObject,verb:Verb,item?:Item){const wasOpen=puzzle.cabinetOpen;const result=ui.execute(object.id,verb,item);if(wasOpen!==puzzle.cabinetOpen)audio.play('cabinet',puzzle.cabinetOpen,.65);say(result||object.description);Object.assign(host.dataset,{lastObject:object.id,cabinetOpen:String(puzzle.cabinetOpen),ropeCollected:String(puzzle.ropeCut),jawGiven:String(puzzle.jawGiven),eyeGiven:String(puzzle.eyeGiven)});}
  function inspect(object:CellObject){
-  if(object.id==='mouse'){if(!mouse.selectable){say('Si è nascosto dietro la botte. Tornerà tra poco.');return;}if(pendingVerb!=='examine'){mouse.flee();motion.stop();say('Ehi, aspetta! Volevo soltanto parlare...');return;}}
+  if(object.id==='mouse'){if(!mouse.selectable){say('Si è nascosto dietro la botte. Tornerà tra poco.');return;}if(pendingVerb!=='examine'){mouse.flee();audio.mouseSqueak();motion.stop();say('Ehi, aspetta! Volevo soltanto parlare...');return;}}
   if(object.id==='skull'&&pendingVerb!=='examine'&&!pendingItem){motion.stop();clearTimeout(dialogueTimer);$('dialogue').textContent='';skullDialogue.open();return;}
   if(object.id==='wall-hole'&&pendingVerb!=='examine'&&!pendingItem&&puzzle.secretRevealed&&!puzzle.doorUncovered){motion.stop();revealing={time:0,swapped:false};revealOverlay.style.opacity='0';revealOverlay.hidden=false;clearTimeout(dialogueTimer);$('dialogue').textContent='';return;}
   if(object.id==='secret-door'&&puzzle.doorUncovered&&!puzzle.roomComplete&&pendingItem==='cup'&&puzzle.has('cup')&&puzzle.secretRevealed){const hint=puzzle.exitHint();if(hint){say(hint);motion.go({u:.70,v:.65});}else{motion.stop();knocking={time:0,hits:0};}return;}
@@ -81,6 +81,7 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
  function select(object:CellObject,run:boolean,verb?:Verb,item?:Item){
   if(throwing||interaction||skullDialogue.active||knocking||revealing||!puzzle.visible(object.id)||(object.id==='mouse'&&!mouse.selectable))return;
   void footsteps.unlock();void audio.unlock();pendingVerb=verb??(mode==='examine'?'examine':ui.defaultVerb(object.id));pendingItem=item??ui.selected;
+  if(object.id==='mouse'&&pendingVerb!=='examine'&&!pendingItem){pending=null;inspect(object);return;}
   if(pendingVerb==='examine'&&!pendingItem){pending=null;motion.stop();inspect(object);}else if(motion.go({...object.goal},run)){pending=object;}else say('Da qui non ci arrivo. Provo a fare il giro.');
  }
  function pointAction(event:PointerEvent,touchTarget?:Element){if(throwing||interaction||skullDialogue.active||knocking||revealing||event.button!==0)return;void footsteps.unlock();void audio.unlock();const rect=frame.getBoundingClientRect(),point={x:120+(event.clientX-rect.left)*780/rect.width,y:(event.clientY-rect.top)*559/rect.height};const run=event.timeStamp-lastTap.time<350&&Math.hypot(event.clientX-lastTap.x,event.clientY-lastTap.y)<20;lastTap={time:event.timeStamp,x:event.clientX,y:event.clientY};
@@ -176,16 +177,16 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
   renderer.render(scene,camera);
   body.position.copy(bodyBase);poseBones.forEach((b,i)=>b.quaternion.copy(boneBases[i]));
   arm.quaternion.copy(armBase);forearm.quaternion.copy(forearmBase);torso.quaternion.copy(torsoBase);
-  ctx.clearRect(0,0,780,559);ctx.save();ctx.translate(-120,0);ctx.imageSmoothingEnabled=false;ctx.drawImage(backdrop,0,0);for(const q of [[423,365,89,19],[577,335,43,12],[671,359,39,12]])shadow(q[0],q[1],q[2],q[3],.24);const visibleLayers=layers.filter(l=>l.id!=='mouse');drawMouse();for(const l of visibleLayers)drawCellLayer(ctx,l);puzzleArt.draw(ctx,puzzle);puzzleArt.drawSkull(ctx,puzzle);puzzleArt.drawFragments(ctx,puzzle);const p=projectCell(motion.location),height=219.3975,width=height*192/224;shadow(p.x,p.y+1,19,7,.30);ctx.drawImage(renderer.domElement,p.x-6*seatWeight-(anchor.x+1)/2*width,p.y-40*seatWeight-(1-anchor.y)/2*height,width,height);
+  ctx.clearRect(0,0,780,559);ctx.save();ctx.translate(-120,0);ctx.imageSmoothingEnabled=false;ctx.drawImage(backdrop,0,0);for(const q of [[423,365,89,19],[577,335,43,12],[671,359,39,12]])shadow(q[0],q[1],q[2],q[3],.24);const visibleLayers=layers.filter(l=>l.id!=='mouse');for(const l of visibleLayers)drawCellLayer(ctx,l);drawMouse();puzzleArt.draw(ctx,puzzle);puzzleArt.drawSkull(ctx,puzzle);puzzleArt.drawFragments(ctx,puzzle);const p=projectCell(motion.location),height=219.3975,width=height*192/224;shadow(p.x,p.y+1,19,7,.30);ctx.drawImage(renderer.domElement,p.x-6*seatWeight-(anchor.x+1)/2*width,p.y-40*seatWeight-(1-anchor.y)/2*height,width,height);
   if(cellLayerOccludes('cabinet',.52,motion.location))puzzleArt.draw(ctx,puzzle);
-  if(cellLayerOccludes('mouse',.94,motion.location)){drawMouse();const barrel=layers.find(l=>l.id==='barrel');if(barrel&&mouse.amount<1)drawCellLayer(ctx,barrel);}
   for(const l of visibleLayers)if(!(l.id==='bed'&&seatWeight>0)&&cellLayerOccludes(l.id,l.depth,motion.location))drawCellLayer(ctx,l);
   if(cellLayerOccludes('barrel',.82,motion.location))puzzleArt.drawFragments(ctx,puzzle);
+  if(cellLayerOccludes('mouse',.94,motion.location))drawMouse();
   if(heldJaw)puzzleArt.drawHeld(ctx,heldItem,heldJaw.x,heldJaw.y);
   if(throwing&&throwing.start){const t=throwing.time;if(t<THROW_IMPACT){const b=t<THROW_RELEASE?{...throwing.start,rotation:-.25}:bottleFlight(t,throwing.start,{x:672,y:284});puzzleArt.drawBottle(ctx,b.x,b.y,b.rotation);}else{const q=Math.min(1,(t-THROW_IMPACT)/(THROW_DURATION-THROW_IMPACT));for(let i=0;i<12;i++){const a=i*2.399,x=672+Math.cos(a)*(8+17*q),y=284+Math.sin(a)*5-30*Math.sin(q*Math.PI);ctx.fillStyle=i%2?'#b4cac0':'#536f69';ctx.fillRect(Math.round(x),Math.round(y),i%3+2,2);}}}
   if(debug&&motion.path.length){ctx.beginPath();ctx.moveTo(p.x,p.y);for(const q of motion.path){const c=projectCell(q);ctx.lineTo(c.x,c.y);}ctx.strokeStyle='#e6c67a';ctx.lineWidth=1;ctx.stroke();}ctx.restore();
   $('map-player').setAttribute('cx',String(motion.location.u*100));$('map-player').setAttribute('cy',String(motion.location.v*100));$('status').textContent=motion.state==='running'?'Di corsa':motion.state==='walking'?'Un passo alla volta':motion.state==='braking'?'Rallento…':'In esplorazione';
   Object.assign(host.dataset,{motion:motion.state,walkable:String(walkable(motion.location)),u:motion.location.u.toFixed(5),v:motion.location.v.toFixed(5),pending:pending?.id??'',speed:motion.speed.toFixed(3)});
  }
- loading.remove();Object.assign(host.dataset,{ready:'true',room:'0.13.0',character:'Barnaby',background:'layered-2d'});requestAnimationFrame(tick);
+ loading.remove();Object.assign(host.dataset,{ready:'true',room:'0.13.0',character:'Galeotto',background:'layered-2d'});requestAnimationFrame(tick);
 }
