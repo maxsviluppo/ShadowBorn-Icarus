@@ -25,12 +25,14 @@ assert.match(s.exitHint(),/orbita/);
 s.act('door','interact');assert.equal(s.roomComplete,false);
 s.act('skull','interact','eye');assert.equal(s.eyeGiven,true);assert.equal(s.has('eye'),false);
 const inv=[...s.inventory];s.act('skull','interact','eye');assert.deepEqual(s.inventory,inv);
-assert.match(s.exitHint(),/indovinelli/);s.riddlesPassed=true;s.secretRevealed=true;assert.equal(s.exitHint(),'');s.act('door','examine');assert.equal(s.roomComplete,false);
-s.act('door','interact');assert.equal(s.roomComplete,false,'main door stays barred');s.act('wall-hole','interact','cup');assert.equal(s.roomComplete,true);
-for(const field of ['jugTaken','eyeFound','cupTaken','grogTaken','rustDissolved','jawTaken','jawGiven','eyeGiven','bottleBroken','shardTaken','ropeCut','riddlesPassed','secretRevealed']){
+assert.match(s.exitHint(),/indovinelli/);s.riddlesPassed=true;s.secretRevealed=true;assert.match(s.exitHint(),/parato/);s.doorUncovered=true;assert.equal(s.exitHint(),'');s.act('door','examine');assert.equal(s.roomComplete,false);
+s.act('door','interact');assert.equal(s.roomComplete,false,'main door stays barred');s.act('secret-door','interact','cup');assert.equal(s.roomComplete,true);
+for(const field of ['jugTaken','eyeFound','cupTaken','grogTaken','rustDissolved','jawTaken','jawGiven','eyeGiven','bottleBroken','shardTaken','ropeCut','riddlesPassed','secretRevealed','doorUncovered']){
  const incomplete=Object.assign(new CellPuzzle(),s,{inventory:[...s.inventory],roomComplete:false,[field]:false});
- assert.ok(incomplete.exitHint(),field+' produces a hint');incomplete.act('wall-hole','interact','cup');assert.equal(incomplete.roomComplete,false,field+' prevents exit');
+ assert.ok(incomplete.exitHint(),field+' produces a hint');incomplete.act('secret-door','interact','cup');assert.equal(incomplete.roomComplete,false,field+' prevents exit');
 }
 const early=new CellPuzzle();early.act('skull','interact','eye');assert.equal(early.eyeGiven,false);
 early.act('jug','take');early.act('jug','extract');early.act('skull','interact','eye');assert.equal(early.eyeGiven,true);assert.equal(early.jawGiven,false);
 console.log('PASS: eye placement in either order, single consumption, every exit prerequisite, examination never exits.');
+
+const wall=new CellPuzzle();assert.equal(wall.visible('secret-door'),false);assert.equal(wall.visible('wall-hole'),true);wall.act('wall-hole','interact');assert.equal(wall.doorUncovered,false);wall.secretRevealed=true;wall.act('wall-hole','interact');assert.equal(wall.doorUncovered,false,'only fade completion swaps room');wall.doorUncovered=true;assert.equal(wall.visible('wall-hole'),false);assert.equal(wall.visible('secret-door'),true);assert.match(wall.act('secret-door','interact'),/meccanismo/);assert.equal(wall.roomComplete,false);assert.match(wall.act('wall-hole','examine'),/parato/);

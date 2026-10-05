@@ -2,13 +2,14 @@ export type Item='jug'|'cup'|'eye'|'grog'|'bottle'|'broken'|'shard'|'jaw'|'rope'
 export type Verb='examine'|'take'|'interact'|'extract'|'break'|'cut'|'talk';
 export class CellPuzzle {
  inventory:Item[]=[]; cabinetOpen=false; jugTaken=false; cupTaken=false; grogTaken=false;
+ doorUncovered=false;
  riddlesPassed=false; secretRevealed=false;
  eyeGiven=false; roomComplete=false;
  eyeFound=false; rustDissolved=false; jawTaken=false; jawKnown=false; jawGiven=false; ropeCut=false; bottleBroken=false; shardTaken=false;
  has(id:Item){return this.inventory.includes(id);}
  add(id:Item){if(!this.has(id))this.inventory.push(id);}
  remove(id:Item){this.inventory=this.inventory.filter(i=>i!==id);}
- visible(id:string){return id==='broken'?this.bottleBroken&&!this.shardTaken:id==='jug'?!this.jugTaken:id==='cup'?!this.cupTaken:id==='grog'?this.cabinetOpen&&!this.grogTaken:id==='handle'?!this.jawTaken:true;}
+ visible(id:string){return id==='secret-door'?this.doorUncovered:id==='wall-hole'?!this.doorUncovered:id==='broken'?this.bottleBroken&&!this.shardTaken:id==='jug'?!this.jugTaken:id==='cup'?!this.cupTaken:id==='grog'?this.cabinetOpen&&!this.grogTaken:id==='handle'?!this.jawTaken:true;}
  exitHint():string {
   if(!this.jugTaken)return 'Aspetta... quella brocca sul mobile potrebbe tornarmi utile.';
   if(!this.eyeFound)return 'Nella brocca sentivo tintinnare qualcosa. Meglio controllare il fondo.';
@@ -23,12 +24,13 @@ export class CellPuzzle {
   if(!this.ropeCut)return 'Quella corda inchiodata potrebbe servirmi. Ora ho qualcosa per tagliarla.';
   if(!this.riddlesPassed)return 'Il teschio mi deve ancora mettere alla prova con i suoi indovinelli.';
   if(!this.secretRevealed)return 'Devo ascoltare fino in fondo quello che il teschio ha da dirmi.';
+  if(!this.doorUncovered)return 'Devo togliere il parato e scoprire il passaggio.';
   return '';
  }
  act(target:string,verb:Verb,used?:Item):string {
   if(used){
    if(!this.has(used))return 'Non ho più questo oggetto.';
-   if(used==='cup'&&target==='wall-hole'){if(!this.secretRevealed)return 'Sento un suono vuoto, ma non conosco ancora il codice.';const hint=this.exitHint();if(hint)return hint;this.roomComplete=true;return 'Tre colpi lenti. Il passaggio segreto risponde con uno scatto. Ho completato la cella!';}
+   if(used==='cup'&&target==='secret-door'){if(!this.secretRevealed)return 'Sento un suono vuoto, ma non conosco ancora il codice.';const hint=this.exitHint();if(hint)return hint;this.roomComplete=true;return 'Tre colpi lenti. Il passaggio segreto risponde con uno scatto. Ho completato la cella!';}
    if(used==='grog'&&target==='handle') {this.remove('grog');this.add('bottle');this.rustDissolved=true;return 'Il grog scioglie la ruggine! Ora posso staccare la strana maniglia.';}
    if(used==='grog')return 'Meglio di no! Questo grog è corrosivo: schizzerebbe ovunque e farebbe danni. Devo usarlo con attenzione.';
    if(used==='bottle'&&target==='barrel'){this.remove('bottle');this.bottleBroken=true;return 'La bottiglia vuota si rompe sulla botte. Tra i frammenti ce ne sono di taglienti.';}
@@ -38,6 +40,8 @@ export class CellPuzzle {
    return 'Non sembra una buona combinazione.';
   }
   if(verb==='examine'){
+   if(target==='wall-hole')return 'Sembra un pezzetto di parato staccato. La pietra qui è soltanto dipinta.';
+   if(target==='secret-door')return this.roomComplete?'Il meccanismo è scattato: il passaggio è sbloccato.':'Una porta nascosta dietro il parato. Non vedo una normale serratura: deve esserci un meccanismo da azionare.';
    if(target==='handle'||target==='jaw')return this.jawKnown?'È la mandibola che cerca il teschio.':this.rustDissolved?'Una maniglia davvero strana. Le viti sono finalmente libere.':'Una maniglia dalla forma strana. Le viti sono bloccate dalla ruggine.';
    if(target==='jug')return this.eyeFound?'Una brocca vuota, tutta crepata.':'Una brocca crepata. Muovendola sento qualcosa tintinnare sul fondo.';
    if(target==='cup')return 'Una tazza di metallo ammaccata. Posso portarla con me.';
@@ -51,6 +55,8 @@ export class CellPuzzle {
    if(target==='skull')return this.eyeGiven&&this.jawGiven?'Il teschio ha di nuovo occhio e mandibola. Ora mi guarda e può parlare.':this.eyeGiven?'L’occhio è al suo posto. Gli manca ancora la mandibola.':this.jawGiven?'Ora il teschio ha di nuovo la sua mandibola.':'Il teschio cerca di dirmi qualcosa, ma gli manca un pezzo.';
    if(target==='cabinet')return this.cabinetOpen?'Un vecchio mobile aperto.':'Un vecchio mobile con una maniglia decisamente strana.';
   }
+  if(target==='wall-hole'){if(!this.secretRevealed)return 'Un pezzetto di parato staccato. Per ora non so cosa cercare.';return 'Tolgo il parato per scoprire cosa nasconde.';}
+  if(target==='secret-door')return this.roomComplete?'Il passaggio è sbloccato.':'Non si apre. Devo azionare il meccanismo: forse con i colpi indicati dal teschio.';
   if(target==='door'&&verb!=='examine')return this.secretRevealed?'La porta principale è bloccata per sempre. Devo usare la tazza sul passaggio segreto.':this.exitHint()||'Il teschio sembra avere ancora qualcosa da dirmi.';
   if(target==='cabinet'){this.cabinetOpen=!this.cabinetOpen;return this.cabinetOpen?(this.grogTaken?'Il mobile è vuoto.':'Dentro c’è una bottiglia di grog.'):'Richiudo il mobile.';}
   if(target==='jug'&&verb==='take'){if(this.jugTaken)return 'La brocca è già nella borsa.';this.jugTaken=true;this.add('jug');return 'Prendo la brocca. Qualcosa tintinna dentro: posso estrarlo dalla borsa.';}

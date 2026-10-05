@@ -11,6 +11,7 @@ export const cellBlocks:Block[]=[
  {id:'mouse',u:.68,v:.035,w:.075,h:.12},
 ];
 export const cellObjects=[
+ {id:'secret-door',name:'Porta del passaggio',poly:[[740,182],[807,194],[838,224],[838,382],[742,345]],goal:{u:.87,v:.23},description:'Una porta nascosta dietro il parato.'},
  {id:'wall-hole',name:'Piccolo foro',poly:[[787,225],[817,235],[817,263],[787,253]],goal:{u:.87,v:.23},description:'Un piccolo foro tra le pietre. Da lontano si confonde quasi completamente con il muro.'},
  {id:'skull',name:'Teschio',poly:[[253,278],[276,264],[300,283],[303,320],[281,338],[255,321]],goal:{u:.21,v:.77},description:'Un teschio sul catenaccio. Ho la strana sensazione che mi stia ascoltando.'},
  {id:'door',name:'Porta',poly:[[197,235],[256,203],[296,216],[307,244],[307,384],[201,423]],goal:{u:.21,v:.77},description:'Una robusta porta di legno. La catena e quel teschio non promettono niente di buono.'},

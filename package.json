@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 127.0.0.1 --port 4173",
-    "test": "node tests/navigation.mjs && node tests/character-motion.mjs && node tests/footsteps.mjs && node tests/gait3d.mjs && node tests/locomotion3d.mjs && node tests/prop-audio.mjs && node tests/imported-character.mjs && node tests/reference-gait.mjs && node tests/adventure-room.mjs && node tests/pixel-cell.mjs && node tests/barnaby-in-place.mjs && node tests/cell-puzzle.mjs && node tests/bottle-throw.mjs && node tests/interaction-motion.mjs && node tests/touch-explore.mjs && node tests/skull-dialogue.mjs"
+    "test": "node tests/navigation.mjs && node tests/character-motion.mjs && node tests/footsteps.mjs && node tests/gait3d.mjs && node tests/locomotion3d.mjs && node tests/prop-audio.mjs && node tests/imported-character.mjs && node tests/reference-gait.mjs && node tests/adventure-room.mjs && node tests/pixel-cell.mjs && node tests/barnaby-in-place.mjs && node tests/cell-puzzle.mjs && node tests/bottle-throw.mjs && node tests/interaction-motion.mjs && node tests/touch-explore.mjs && node tests/skull-dialogue.mjs && node tests/secret-passage.mjs"
   },
   "dependencies": {
     "phaser": "^3.87.0",

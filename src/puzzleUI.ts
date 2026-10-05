@@ -30,17 +30,17 @@ export function createPuzzleUI(s:CellPuzzle,say:(text:string)=>void,route:(targe
   }
   for(const path of document.querySelectorAll<SVGElement>('[data-object]')){
    const id=path.dataset.object!;path.style.display=s.visible(id)?'':'none';
-   if(id==='wall-hole')path.setAttribute('aria-label',s.secretRevealed?'Passaggio segreto':'Piccolo foro');
+   if(id==='wall-hole')path.setAttribute('aria-label',s.secretRevealed?'Parato staccato':'Piccolo foro');
    if(id==='cabinet')path.setAttribute('d',s.cabinetOpen?'M492,265L527,245L581,218L637,240L636,326L599,355L532,323L495,336Z':'M527,238L581,218L637,240L636,326L599,355L532,323Z');
    if(id==='handle'){path.setAttribute('aria-label',s.jawKnown?'Mandibola':'Strana maniglia');const x=s.cabinetOpen?501:555;path.setAttribute('d',`M${x},289h25v29h-25Z`);}
   }
   for(const id of ['grog','jug','cup','handle']){const p=document.querySelector('[data-object="'+id+'"]');if(p)p.parentElement?.append(p);}
   document.body.dataset.usingItem=selected??'';document.body.dataset.usingLabel=selected?label(selected):'';
  }
- const defaultVerb=(id:string):Verb=>id==='wall-hole'?'examine':['jug','cup','grog','handle','broken'].includes(id)?'take':id==='skull'?'talk':'interact';
+ const defaultVerb=(id:string):Verb=>id==='wall-hole'?(s.secretRevealed?'interact':'examine'):['jug','cup','grog','handle','broken'].includes(id)?'take':id==='skull'?'talk':'interact';
  function worldMenu(target:Element,id:string,fallback:string){
   objectActions(target,[{label:'Esamina',icon:'lens',run:()=>say(s.act(id,'examine')||fallback)},
-   {label:id==='bed'?'Siediti':id==='cabinet'?(s.cabinetOpen?'Chiudi':'Apri'):id==='skull'?'Parla':defaultVerb(id)==='take'||id==='rope'?'Prendi':'Interagisci',icon:id==='skull'?'talk':'hand',run:()=>route(id,defaultVerb(id))},
+   ...(id==='wall-hole'&&!s.secretRevealed?[]:[{label:id==='wall-hole'?'Togli il parato':id==='secret-door'?'Apri':id==='bed'?'Siediti':id==='cabinet'?(s.cabinetOpen?'Chiudi':'Apri'):id==='skull'?'Parla':defaultVerb(id)==='take'||id==='rope'?'Prendi':'Interagisci',icon:id==='skull'?'talk':'hand',run:()=>route(id,defaultVerb(id))}]),
    ...(selected?[{label:'Usa '+label(selected),icon:'wrench',run:()=>route(id,'interact',selected)}]:[]),
    ...(id==='rope'?[{label:'Taglia',icon:'wrench',run:()=>route(id,'cut')}]:[])]);
  }

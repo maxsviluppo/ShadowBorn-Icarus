@@ -37,7 +37,7 @@ La bottiglia vuota si usa direttamente sulla botte. Dopo avvicinamento e orienta
 ## Puntatore, combinazioni e audio
 Il nome del bersaglio segue il puntatore in alto a sinistra. Con un oggetto selezionato mostra Usa X con Y. Maniglia e oggetti piccoli hanno priorità rispetto ai mobili; la sagoma interattiva del mobile segue l’anta aperta.
 Nella borsa, Usa seleziona l’oggetto e un clic su un altro prova la combinazione. Le combinazioni non previste danno una risposta e conservano entrambi gli oggetti e la selezione. Esc annulla. La borsa rimane aperta, con il dialogo sopra gli slot.
-Sottofondo utente sottofondogame.mp3 in loop; regolatori separati effetti 100% e musica 20% all’avvio.
+Sottofondo utente sottofondogame.mp3 in loop; regolatori separati effetti 100% e musica 2% all’avvio.
 Chiave inglese scontornata con Canva MAHWyQhd2yc, usata nei menu e nel cursore azione.
 
 
@@ -57,3 +57,8 @@ Le risposte corrette restano B / C / B come richiesto. Ogni errore mostra la rel
 Le battute si avanzano con Continua e il dialogo può essere sospeso. Se si interrompe la rivelazione, questa viene riproposta prima di abilitare il passaggio. La porta principale resta sempre bloccata.
 Dopo la rivelazione, il Piccolo foro diventa Passaggio segreto. Usare la tazza, dopo tutti gli altri passaggi, esegue tre clic distanziati di 850 ms e completa la cella. Codice provvisorio confermato dall’utente: tre colpi lenti. Non è collegata una scena successiva.
 Verifiche automatiche: prerequisiti, risposte, shuffle effettivo, reset progressi dopo errore, ordine alternativo dei pezzi, rivelazione e uscita. La prova visiva nel browser non è stata ripetuta dopo il blocco di policy precedente.
+
+
+## Parato e porta scoperta
+Sfondo cell-transparent.png con alpha su app nera; dopo la rivelazione del teschio compare Togli il parato nel menu del foro. Dissolvenza di 0,8 s, scritta Dopo 10 minuti... per 7 s, dissolvenza di ritorno di 0,8 s. La room passa a cell-secret-door.png sotto il nero; mobili, inventario e progressi restano invariati.
+Il foro viene sostituito dall’area Porta del passaggio, con Esamina e Apri. Apri senza tazza spiega il meccanismo. La tazza funziona solo sulla porta scoperta, dopo tutti i prerequisiti. Braccio e tazza visibile seguono tre colpi distanziati di 850 ms, con clic sincronizzato. Ricomincia ripristina immagine e stati iniziali. Rimane il completamento della cella senza scena successiva.

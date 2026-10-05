@@ -1,7 +1,7 @@
 import type {PropKind} from './propMotion';
 /** Shared material sound library; every instance uses the same family of samples. */
 export class RoomAudio{
-  enabled=true;musicEnabled=true;private effectsVolume=1;private musicVolume=.2;
+  enabled=true;musicEnabled=true;private effectsVolume=1;private musicVolume=.02;
   setEffectsVolume(v:number){this.effectsVolume=Math.max(0,Math.min(1,v));if(this.master&&this.ctx)this.master.gain.setTargetAtTime(this.enabled?.65*this.effectsVolume:0,this.ctx.currentTime,.02);}
   setMusicVolume(v:number){this.musicVolume=Math.max(0,Math.min(1,v));if(this.music)this.music.volume=this.musicVolume;}
   played=0;last='';ready=false;
