@@ -11,3 +11,5 @@ Il file originale e il progetto Blender modificabile rimangono in art/prisoner-c
 - Script riproducibile: scripts/build-prisoner.py; anteprime locali: scripts/preview-prisoner-animated.py.
 
 Topino: livello davanti alla botte; fuga immediata alla richiesta di dialogo. Squittio fornito dall’utente convertito da AIFF in WAV mono, guadagno 0,18 prima del volume effetti. Fughe spontanee silenziose.
+
+Pulizia successiva: scripts/clean-prisoner.py rimuove 94 triangoli allungati e copia specularmente la postura laterale del braccio sinistro sul destro in tutte le azioni. Progetto locale finale: Galeotto-Pulito.blend. Verificati render del GLB esportato in idle e camminata.
