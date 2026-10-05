@@ -1,3 +1,4 @@
+import {CellMouse} from './cellMouse';
 import {revealFrame,KNOCK_TIMES,KNOCK_DURATION,knockPose} from './secretPassage';
 import {createSkullDialogue} from './skullDialogueUI';
 import {installTouchExplore} from './touchExplore';
@@ -30,6 +31,7 @@ export async function startPixelCell(){
  const frame=document.createElement('div');Object.assign(frame.style,{position:'absolute',left:'50%',top:'50%',transform:'translate(-50%,-50%)'});
  const canvas=document.createElement('canvas');canvas.width=780;canvas.height=559;canvas.setAttribute('aria-label','Cella pixel art: clicca sul pavimento per camminare');Object.assign(canvas.style,{width:'100%',height:'100%',display:'block',imageRendering:'pixelated',touchAction:'none'});frame.append(canvas);host.append(frame);const ctx=canvas.getContext('2d')!;
  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','120 0 780 559');svg.setAttribute('role','group');svg.setAttribute('aria-label','Oggetti della cella');Object.assign(svg.style,{position:'absolute',inset:'0',width:'100%',height:'100%',pointerEvents:'none'});frame.append(svg);
+ const mouse=new CellMouse();
  const touchMenus=new Map<Element,()=>void>();
  for(const object of [...cellObjects].reverse()){
   const path=document.createElementNS(svg.namespaceURI,'path');path.setAttribute('d',`M${object.poly.map(p=>p.join(',')).join('L')}Z`);path.setAttribute('fill','transparent');path.setAttribute('role','button');path.setAttribute('tabindex','0');path.setAttribute('aria-label',object.name);path.setAttribute('data-object',object.id);path.setAttribute('style','pointer-events:all;cursor:pointer');
@@ -68,6 +70,7 @@ export async function startPixelCell(){
  const skullDialogue=createSkullDialogue(puzzle,()=>ui.refresh());
  function finishInteraction(object:CellObject,verb:Verb,item?:Item){const wasOpen=puzzle.cabinetOpen;const result=ui.execute(object.id,verb,item);if(wasOpen!==puzzle.cabinetOpen)audio.play('cabinet',puzzle.cabinetOpen,.65);say(result||object.description);Object.assign(host.dataset,{lastObject:object.id,cabinetOpen:String(puzzle.cabinetOpen),ropeCollected:String(puzzle.ropeCut),jawGiven:String(puzzle.jawGiven),eyeGiven:String(puzzle.eyeGiven)});}
  function inspect(object:CellObject){
+  if(object.id==='mouse'){if(!mouse.selectable){say('Si è nascosto dietro la botte. Tornerà tra poco.');return;}if(pendingVerb!=='examine'){mouse.flee();motion.stop();say('Ehi, aspetta! Volevo soltanto parlare...');return;}}
   if(object.id==='skull'&&pendingVerb!=='examine'&&!pendingItem){motion.stop();clearTimeout(dialogueTimer);$('dialogue').textContent='';skullDialogue.open();return;}
   if(object.id==='wall-hole'&&pendingVerb!=='examine'&&!pendingItem&&puzzle.secretRevealed&&!puzzle.doorUncovered){motion.stop();revealing={time:0,swapped:false};revealOverlay.style.opacity='0';revealOverlay.hidden=false;clearTimeout(dialogueTimer);$('dialogue').textContent='';return;}
   if(object.id==='secret-door'&&puzzle.doorUncovered&&!puzzle.roomComplete&&pendingItem==='cup'&&puzzle.has('cup')&&puzzle.secretRevealed){const hint=puzzle.exitHint();if(hint){say(hint);motion.go({u:.70,v:.65});}else{motion.stop();knocking={time:0,hits:0};}return;}
@@ -76,13 +79,13 @@ export async function startPixelCell(){
   if(kind){interaction={kind,time:0,committed:false,object,verb:pendingVerb,item:pendingItem};motion.stop();return;}
 if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing={time:0,start:null,impact:false};motion.stop();say('Questa volta è vuota. Vediamo se la botte regge.');return;}const wasOpen=puzzle.cabinetOpen;const result=ui.execute(object.id,pendingVerb,pendingItem);if(wasOpen!==puzzle.cabinetOpen)audio.play('cabinet',puzzle.cabinetOpen,.65);say(result||object.description);seen.add(object.id);host.dataset.lastObject=object.id;host.dataset.cabinetOpen=String(puzzle.cabinetOpen);host.dataset.ropeCollected=String(puzzle.ropeCut);host.dataset.jawGiven=String(puzzle.jawGiven);}
  function select(object:CellObject,run:boolean,verb?:Verb,item?:Item){
-  if(throwing||interaction||skullDialogue.active||knocking||revealing||!puzzle.visible(object.id))return;
+  if(throwing||interaction||skullDialogue.active||knocking||revealing||!puzzle.visible(object.id)||(object.id==='mouse'&&!mouse.selectable))return;
   void footsteps.unlock();void audio.unlock();pendingVerb=verb??(mode==='examine'?'examine':ui.defaultVerb(object.id));pendingItem=item??ui.selected;
   if(pendingVerb==='examine'&&!pendingItem){pending=null;motion.stop();inspect(object);}else if(motion.go({...object.goal},run)){pending=object;}else say('Da qui non ci arrivo. Provo a fare il giro.');
  }
  function pointAction(event:PointerEvent,touchTarget?:Element){if(throwing||interaction||skullDialogue.active||knocking||revealing||event.button!==0)return;void footsteps.unlock();void audio.unlock();const rect=frame.getBoundingClientRect(),point={x:120+(event.clientX-rect.left)*780/rect.width,y:(event.clientY-rect.top)*559/rect.height};const run=event.timeStamp-lastTap.time<350&&Math.hypot(event.clientX-lastTap.x,event.clientY-lastTap.y)<20;lastTap={time:event.timeStamp,x:event.clientX,y:event.clientY};
   const hit=(touchTarget??event.target as Element).closest('[data-object]');if(hit){if(touchTarget){const object=cellObjects.find(o=>o.id===hit.getAttribute('data-object'));if(object)select(object,run);}else objectRun=run;return;}
-  const object=cellObjects.find(o=>puzzle.visible(o.id)&&o.id!=='handle'&&contains(point,o.poly.map(p=>[...p])));if(object){select(object,run);return;}const target=unprojectCell(point);if(target.u<0||target.u>1||target.v<0||target.v>1)return;pending=null;if(!motion.go(target,run))say('Qui non posso passare.');
+  const object=cellObjects.find(o=>puzzle.visible(o.id)&&(o.id!=='mouse'||mouse.selectable)&&o.id!=='handle'&&contains(point,o.poly.map(p=>[...p])));if(object){select(object,run);return;}const target=unprojectCell(point);if(target.u<0||target.u>1||target.v<0||target.v>1)return;pending=null;if(!motion.go(target,run))say('Qui non posso passare.');
  }
  frame.addEventListener('pointerdown',event=>{if(event.pointerType!=='touch')pointAction(event);});
  for(const id of ['open','close'])$(id).hidden=true;
@@ -116,7 +119,7 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
   hold:target=>{const menu=touchMenus.get(target.closest('[data-object]')!);if(menu){menu();return true;}return false;}
  });
 
- $('reset').onclick=()=>{revealing=null;revealOverlay.hidden=true;bg.clearRect(0,0,1024,559);bg.drawImage(background,0,0,1024,559);knocking=null;skullDialogue.reset();$('finish').hidden=true;throwing=null;interaction=null;motion.reset();pending=null;Object.assign(puzzle,new CellPuzzle());ui.clear();phase=blend=runBlend=0;seen.clear();say('Una porta, una finestra e un topo. Da dove comincio?');};
+ $('reset').onclick=()=>{mouse.reset();revealing=null;revealOverlay.hidden=true;bg.clearRect(0,0,1024,559);bg.drawImage(background,0,0,1024,559);knocking=null;skullDialogue.reset();$('finish').hidden=true;throwing=null;interaction=null;motion.reset();pending=null;Object.assign(puzzle,new CellPuzzle());ui.clear();phase=blend=runBlend=0;seen.clear();say('Una porta, una finestra e un topo. Da dove comincio?');};
  $('debug').onclick=()=>{debug=!debug;$('debug').setAttribute('aria-pressed',String(debug));};
  window.addEventListener('keydown',e=>{if(e.key==='Escape'&&!throwing&&!interaction){pending=null;motion.stop();}if(e.key.toLowerCase()==='d')debug=!debug;});
  document.addEventListener('visibilitychange',()=>{last=performance.now();if(document.hidden)audio.pause();});
@@ -125,7 +128,20 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
  const help=$('help-dialog').querySelectorAll('p');help[0].textContent='Nella borsa: clicca un oggetto per Esamina, Usa o le azioni speciali. Dopo Usa, clicca il bersaglio nella stanza. Esc annulla.';help[1].textContent='Interagisci con un oggetto per avvicinarti e osservarlo. Esamina per guardarlo da dove sei.';help[2].textContent='La borsa in basso a sinistra apre l’inventario (tasto I). Il diario a destra contiene audio, musica, istruzioni e obiettivi. Clic destro su un oggetto per scegliere un’azione; su touch tieni premuto. Scorri il dito per leggere i nomi senza agire; solleva e tocca brevemente per interagire. Il doppio clic resta dedicato alla corsa.';
  say('Una porta, una finestra e un topo. Da dove comincio?');
  function shadow(x:number,y:number,rx:number,ry:number,opacity:number){ctx.save();ctx.translate(x,y);ctx.scale(rx,ry);const g=ctx.createRadialGradient(0,0,.1,0,0,1);g.addColorStop(0,`rgba(0,0,0,${opacity})`);g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,1,0,Math.PI*2);ctx.fill();ctx.restore();}
- function tick(now:number){requestAnimationFrame(tick);if(document.hidden||now-last<1000/30)return;const dt=Math.min((now-last)/1000,.10);last=now;elapsed+=dt;const previousYaw=motion.yaw;const step=motion.step(dt);
+ function drawMouse(){
+  const l=layers.find(l=>l.id==='mouse');if(!l?.cache||mouse.amount<=0)return;
+  const a=mouse.amount,dx=-40*(1-a),breath=Math.sin(elapsed*3.3)*.009;
+  shadow(710+dx,370,12,4,.22*a);
+  ctx.save();ctx.translate(710+dx,370);ctx.scale(1+breath,1-breath);ctx.translate(-710,-370);ctx.globalAlpha=Math.min(1,a*3);
+  // Separate horizontal bands let the nose and paws twitch without moving the feet wholesale.
+  const twitch=Math.pow(Math.max(0,Math.sin(elapsed*7)),10)*.7;
+  ctx.drawImage(l.cache,690,320,40,27,690,320,40,27);
+  ctx.drawImage(l.cache,690,347,40,8,690+twitch,347,40,8);
+  ctx.drawImage(l.cache,690,355,40,9,690,355,40,9);
+  ctx.drawImage(l.cache,690,364,40,10,690,364-Math.max(0,Math.sin(elapsed*4.7))*.5,40,10);
+  ctx.restore();
+ }
+ function tick(now:number){requestAnimationFrame(tick);if(document.hidden||now-last<1000/30)return;const dt=Math.min((now-last)/1000,.10);last=now;elapsed+=dt;mouse.step(dt);const mouseHit=svg.querySelector<SVGElement>('[data-object=mouse]')!;mouseHit.style.pointerEvents=mouse.selectable?'all':'none';mouseHit.style.visibility=mouse.selectable?'visible':'hidden';mouseHit.setAttribute('tabindex',mouse.selectable?'0':'-1');host.dataset.mouse=mouse.phase;const previousYaw=motion.yaw;const step=motion.step(dt);
   if(motion.arrived&&pending){const object=pending;const centre={x:object.poly.reduce((a,p)=>a+p[0],0)/object.poly.length,y:object.poly.reduce((a,p)=>a+p[1],0)/object.poly.length};const aim=unprojectCell(centre);if(motion.face(Math.atan2(aim.u-motion.location.u,aim.v-motion.location.v),dt)){pending=null;inspect(object);}}
   const yawStep=Math.abs(Math.atan2(Math.sin(motion.yaw-previousYaw),Math.cos(motion.yaw-previousYaw)));
   const turning=step<.00001&&yawStep>.0001;
@@ -160,8 +176,9 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
   renderer.render(scene,camera);
   body.position.copy(bodyBase);poseBones.forEach((b,i)=>b.quaternion.copy(boneBases[i]));
   arm.quaternion.copy(armBase);forearm.quaternion.copy(forearmBase);torso.quaternion.copy(torsoBase);
-  ctx.clearRect(0,0,780,559);ctx.save();ctx.translate(-120,0);ctx.imageSmoothingEnabled=false;ctx.drawImage(backdrop,0,0);for(const q of [[423,365,89,19],[577,335,43,12],[671,359,39,12],[710,370,14,5]])shadow(q[0],q[1],q[2],q[3],.24);const visibleLayers=layers;for(const l of visibleLayers)drawCellLayer(ctx,l);puzzleArt.draw(ctx,puzzle);puzzleArt.drawSkull(ctx,puzzle);puzzleArt.drawFragments(ctx,puzzle);const p=projectCell(motion.location),height=219.3975,width=height*192/224;shadow(p.x,p.y+1,19,7,.30);ctx.drawImage(renderer.domElement,p.x-6*seatWeight-(anchor.x+1)/2*width,p.y-40*seatWeight-(1-anchor.y)/2*height,width,height);
+  ctx.clearRect(0,0,780,559);ctx.save();ctx.translate(-120,0);ctx.imageSmoothingEnabled=false;ctx.drawImage(backdrop,0,0);for(const q of [[423,365,89,19],[577,335,43,12],[671,359,39,12]])shadow(q[0],q[1],q[2],q[3],.24);const visibleLayers=layers.filter(l=>l.id!=='mouse');drawMouse();for(const l of visibleLayers)drawCellLayer(ctx,l);puzzleArt.draw(ctx,puzzle);puzzleArt.drawSkull(ctx,puzzle);puzzleArt.drawFragments(ctx,puzzle);const p=projectCell(motion.location),height=219.3975,width=height*192/224;shadow(p.x,p.y+1,19,7,.30);ctx.drawImage(renderer.domElement,p.x-6*seatWeight-(anchor.x+1)/2*width,p.y-40*seatWeight-(1-anchor.y)/2*height,width,height);
   if(cellLayerOccludes('cabinet',.52,motion.location))puzzleArt.draw(ctx,puzzle);
+  if(cellLayerOccludes('mouse',.94,motion.location)){drawMouse();const barrel=layers.find(l=>l.id==='barrel');if(barrel&&mouse.amount<1)drawCellLayer(ctx,barrel);}
   for(const l of visibleLayers)if(!(l.id==='bed'&&seatWeight>0)&&cellLayerOccludes(l.id,l.depth,motion.location))drawCellLayer(ctx,l);
   if(cellLayerOccludes('barrel',.82,motion.location))puzzleArt.drawFragments(ctx,puzzle);
   if(heldJaw)puzzleArt.drawHeld(ctx,heldItem,heldJaw.x,heldJaw.y);
