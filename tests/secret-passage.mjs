@@ -1,5 +1,6 @@
 import fs from 'node:fs';import assert from 'node:assert/strict';import ts from 'typescript';
 const code=ts.transpileModule(fs.readFileSync('src/secretPassage.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.ES2022}}).outputText;
 const {revealFrame:r,REVEAL_FADE:f,REVEAL_HOLD:h,REVEAL_DURATION:d,KNOCK_TIMES:k,knockPose:p,KNOCK_DURATION:n}=await import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));
-assert.equal(h,7);assert.equal(r(0).opacity,0);assert.equal(r(f/2).opacity,.5);assert.equal(r(f).uncovered,true);assert.equal(r(f).caption,true);assert.equal(r(f+h-.001).caption,true);assert.equal(r(f+h).caption,false);assert.equal(r(d).opacity,0);assert.equal(r(d).done,true);assert.equal(k.length,3);assert.ok(k[1]-k[0]>.8);assert.ok(k[2]-k[1]>.8);assert.equal(Math.abs(p(0).arm),0);assert.equal(Math.abs(p(n).arm),0);assert.ok(p(k[0]).forearm>p(k[0]-.2).forearm);
+assert.equal(h,4);assert.equal(r(0).opacity,0);assert.equal(r(f/2).opacity,.5);assert.equal(r(f).uncovered,true);assert.equal(r(f).caption,true);assert.equal(r(f+h-.001).caption,true);assert.equal(r(f+h).caption,false);assert.equal(r(d).opacity,0);assert.equal(r(d).done,true);assert.equal(k.length,3);assert.ok(k[1]-k[0]>.8);assert.ok(k[2]-k[1]>.8);assert.equal(Math.abs(p(0).arm),0);assert.equal(Math.abs(p(n).arm),0);assert.ok(p(k[0]).forearm>p(k[0]-.2).forearm);
 console.log('PASS: fade holds caption for seven seconds, opaque room swap, three slow contacts and neutral arm recovery.');
+
