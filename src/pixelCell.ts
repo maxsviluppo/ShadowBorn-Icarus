@@ -1,3 +1,4 @@
+import {wakeFrame,WAKE_START} from './wakeIntro';
 import {CellMouse} from './cellMouse';
 import {revealFrame,KNOCK_TIMES,KNOCK_DURATION,knockPose} from './secretPassage';
 import {createSkullDialogue} from './skullDialogueUI';
@@ -36,7 +37,7 @@ export async function startPixelCell(){
  for(const object of [...cellObjects].reverse()){
   const path=document.createElementNS(svg.namespaceURI,'path');path.setAttribute('d',`M${object.poly.map(p=>p.join(',')).join('L')}Z`);path.setAttribute('fill','transparent');path.setAttribute('role','button');path.setAttribute('tabindex','0');path.setAttribute('aria-label',object.name);path.setAttribute('data-object',object.id);path.setAttribute('style','pointer-events:all;cursor:pointer');
   path.addEventListener('pointerenter',()=>{(path as SVGElement).style.cursor=cursor(mode==='examine'||(object.id==='window'||object.id==='wall-hole')?'lens':object.id==='skull'||object.id==='mouse'?'talk':object.id==='cabinet'?'wrench':'hand');});
-  const menu=()=>{if(throwing||interaction||skullDialogue.active||knocking||revealing)return;pending=null;motion.stop();ui.worldMenu(path,object.id,object.description);};
+  const menu=()=>{if(!introFinished||throwing||interaction||skullDialogue.active||knocking||revealing)return;pending=null;motion.stop();ui.worldMenu(path,object.id,object.description);};
   touchMenus.set(path,menu);
   path.addEventListener('contextmenu',e=>{e.preventDefault();menu();});
   path.addEventListener('keydown',e=>{if((e as KeyboardEvent).key==='ContextMenu'||((e as KeyboardEvent).shiftKey&&(e as KeyboardEvent).key==='F10')){e.preventDefault();menu();}});
@@ -55,10 +56,14 @@ export async function startPixelCell(){
  gl_FragColor.rgb=floor(clamp(gl_FragColor.rgb+threshold/levels,0.0,1.0)*levels+0.5)/levels;`);};m.customProgramCacheKey=()=>'barnaby-rgb565';if(m.map){m.map.minFilter=THREE.LinearMipmapLinearFilter;m.map.magFilter=THREE.NearestFilter;m.map.generateMipmaps=true;m.map.needsUpdate=true;}}}});
  const camera=new THREE.OrthographicCamera(-.9,.9,1.05,-1.05,.1,30);camera.position.set(6,5.7,6);camera.lookAt(0,.8,0);camera.updateMatrixWorld();const anchor=new THREE.Vector3(0,0,0).project(camera);
  const mixer=new THREE.AnimationMixer(hero);const actions=['Idle','Walk','Run'].map(name=>{const clip=THREE.AnimationClip.findByName(file.animations,name);if(!clip)throw new Error('Missing animation '+name);const a=mixer.clipAction(clip);a.play();a.paused=true;return a;});
- const motion=new Locomotion3D(CELL_METRES);motion.location={u:.45,v:.69};const footsteps=new Footsteps(),audio=new RoomAudio();let objectRun=false;let pending:CellObject|null=null,mode:'interact'|'examine'='interact',phase=0,blend=0,runBlend=0,elapsed=0,last=performance.now(),debug=false,lastTap={time:-1000,x:0,y:0};const seen=new Set<string>();let pendingVerb:Verb='interact',pendingItem:Item|undefined;
+ const motion=new Locomotion3D(CELL_METRES);motion.location={...WAKE_START};const footsteps=new Footsteps(),audio=new RoomAudio();let objectRun=false;let pending:CellObject|null=null,mode:'interact'|'examine'='interact',phase=0,blend=0,runBlend=0,elapsed=0,last=performance.now(),debug=false,lastTap={time:-1000,x:0,y:0};const seen=new Set<string>();let pendingVerb:Verb='interact',pendingItem:Item|undefined;
  let interaction:{kind:InteractionKind;time:number;committed:boolean;object:CellObject;verb:Verb;item?:Item}|null=null;
  const revealOverlay=document.createElement('div');revealOverlay.id='room-reveal';revealOverlay.hidden=true;revealOverlay.textContent='Dopo 10 minuti...';document.body.append(revealOverlay);
- const introOverlay=document.createElement('div');introOverlay.id='wake-intro';introOverlay.textContent='';document.body.append(introOverlay);let introTime=0;
+ const introOverlay=document.createElement('div');introOverlay.id='wake-intro';introOverlay.style.opacity='1';document.body.append(introOverlay);let introTime=0,introFinished=false;
+ const head=hero.getObjectByName('Head')!;
+ const introControls=[$('bag-toggle'),$('settings-toggle'),$('inventory-tray')];
+ function lockIntro(locked:boolean){frame.inert=locked;introControls.forEach(e=>e.inert=locked);host.dataset.intro=locked?'active':'complete';hint.hidden=true;}
+ window.addEventListener('keydown',e=>{if(!introFinished&&['i','Enter',' ','Escape'].includes(e.key)){e.preventDefault();e.stopImmediatePropagation();}},true);
  let revealing:{time:number;swapped:boolean}|null=null;
  let knocking:{time:number;hits:number}|null=null;
  let throwing:{time:number;start:{x:number;y:number}|null;impact:boolean}|null=null;
@@ -80,12 +85,12 @@ export async function startPixelCell(){
   if(kind){interaction={kind,time:0,committed:false,object,verb:pendingVerb,item:pendingItem};motion.stop();return;}
 if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing={time:0,start:null,impact:false};motion.stop();say('Questa volta è vuota. Vediamo se la botte regge.');return;}const wasOpen=puzzle.cabinetOpen;const result=ui.execute(object.id,pendingVerb,pendingItem);if(wasOpen!==puzzle.cabinetOpen)audio.play('cabinet',puzzle.cabinetOpen,.65);say(result||object.description);seen.add(object.id);host.dataset.lastObject=object.id;host.dataset.cabinetOpen=String(puzzle.cabinetOpen);host.dataset.ropeCollected=String(puzzle.ropeCut);host.dataset.jawGiven=String(puzzle.jawGiven);}
  function select(object:CellObject,run:boolean,verb?:Verb,item?:Item){
-  if(introTime<8||throwing||interaction||skullDialogue.active||knocking||revealing||!puzzle.visible(object.id)||(object.id==='mouse'&&!mouse.selectable))return;
+  if(!introFinished||throwing||interaction||skullDialogue.active||knocking||revealing||!puzzle.visible(object.id)||(object.id==='mouse'&&!mouse.selectable))return;
   void footsteps.unlock();void audio.unlock();pendingVerb=verb??(mode==='examine'?'examine':ui.defaultVerb(object.id));pendingItem=item??ui.selected;
   if(object.id==='mouse'&&pendingVerb!=='examine'&&!pendingItem){pending=null;inspect(object);return;}
   if(pendingVerb==='examine'&&!pendingItem){pending=null;motion.stop();inspect(object);}else if(motion.go({...object.goal},run)){pending=object;}else say('Da qui non ci arrivo. Provo a fare il giro.');
  }
- function pointAction(event:PointerEvent,touchTarget?:Element){if(introTime<8||throwing||interaction||skullDialogue.active||knocking||revealing||event.button!==0)return;void footsteps.unlock();void audio.unlock();const rect=frame.getBoundingClientRect(),point={x:120+(event.clientX-rect.left)*780/rect.width,y:(event.clientY-rect.top)*559/rect.height};const run=event.timeStamp-lastTap.time<350&&Math.hypot(event.clientX-lastTap.x,event.clientY-lastTap.y)<20;lastTap={time:event.timeStamp,x:event.clientX,y:event.clientY};
+ function pointAction(event:PointerEvent,touchTarget?:Element){if(!introFinished||throwing||interaction||skullDialogue.active||knocking||revealing||event.button!==0)return;void footsteps.unlock();void audio.unlock();const rect=frame.getBoundingClientRect(),point={x:120+(event.clientX-rect.left)*780/rect.width,y:(event.clientY-rect.top)*559/rect.height};const run=event.timeStamp-lastTap.time<350&&Math.hypot(event.clientX-lastTap.x,event.clientY-lastTap.y)<20;lastTap={time:event.timeStamp,x:event.clientX,y:event.clientY};
   const hit=(touchTarget??event.target as Element).closest('[data-object]');if(hit){if(touchTarget){const object=cellObjects.find(o=>o.id===hit.getAttribute('data-object'));if(object)select(object,run);}else objectRun=run;return;}
   const object=cellObjects.find(o=>puzzle.visible(o.id)&&(o.id!=='mouse'||mouse.selectable)&&o.id!=='handle'&&contains(point,o.poly.map(p=>[...p])));if(object){select(object,run);return;}const target=unprojectCell(point);if(target.u<0||target.u>1||target.v<0||target.v>1)return;pending=null;if(!motion.go(target,run))say('Qui non posso passare.');
  }
@@ -103,6 +108,7 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
  $('music-volume').oninput=e=>{const v=Number((e.target as HTMLInputElement).value);audio.setMusicVolume(v/100);$('music-level').textContent=v+'%';void audio.unlock();};
  const hint=document.createElement('div');hint.id='pointer-hint';hint.hidden=true;document.body.append(hint);
  function showHint(target:Element|null,x:number,y:number,touch=false){
+  if(!introFinished){hint.hidden=true;return;}
   const item=target?.closest<HTMLElement>('[data-object], [data-item]');
   if(!item){hint.hidden=true;return;}
   const name=item.dataset.hoverName||item.getAttribute('aria-label')||'',using=document.body.dataset.usingLabel;
@@ -122,14 +128,14 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
   hold:target=>{const menu=touchMenus.get(target.closest('[data-object]')!);if(menu){menu();return true;}return false;}
  });
 
- $('reset').onclick=()=>{mouse.reset();revealing=null;revealOverlay.hidden=true;bg.clearRect(0,0,1024,559);bg.drawImage(background,0,0,1024,559);knocking=null;skullDialogue.reset();$('finish').hidden=true;throwing=null;interaction=null;motion.reset();pending=null;Object.assign(puzzle,new CellPuzzle());ui.clear();phase=blend=runBlend=0;seen.clear();say('Una porta, una finestra e un topo. Da dove comincio?');};
+ $('reset').onclick=()=>{introTime=0;introFinished=false;introOverlay.hidden=false;introOverlay.style.opacity='1';lockIntro(true);clearTimeout(dialogueTimer);$('dialogue').textContent='';document.querySelectorAll<HTMLDialogElement>('dialog[open]').forEach(d=>d.close());mouse.reset();revealing=null;revealOverlay.hidden=true;bg.clearRect(0,0,1024,559);bg.drawImage(background,0,0,1024,559);knocking=null;skullDialogue.reset();$('finish').hidden=true;throwing=null;interaction=null;motion.reset();motion.location={...WAKE_START};pending=null;Object.assign(puzzle,new CellPuzzle());ui.clear();phase=blend=runBlend=0;lastTap={time:-1000,x:0,y:0};seen.clear();};
  $('debug').onclick=()=>{debug=!debug;$('debug').setAttribute('aria-pressed',String(debug));};
  window.addEventListener('keydown',e=>{if(e.key==='Escape'&&!throwing&&!interaction){pending=null;motion.stop();}if(e.key.toLowerCase()==='d')debug=!debug;});
  document.addEventListener('visibilitychange',()=>{last=performance.now();if(document.hidden)audio.pause();});
  $('map-furniture').replaceChildren();for(const b of cellBlocks){const r=document.createElementNS(svg.namespaceURI,'rect');for(const [k,v] of Object.entries({x:b.u*100,y:b.v*100,width:b.w*100,height:b.h*100}))r.setAttribute(k,String(v));$('map-furniture').append(r);}
  $('journal-title').textContent='Il diario della cella';$('journal-dialog').querySelector('p')!.textContent='Prima di partire, recupera gli oggetti utili e aiuta il teschio della porta.';$('finish').querySelector('strong')!.textContent='Cella completata';$('finish').querySelector('p')!.textContent='Hai aiutato il teschio, superato i tre indovinelli e trovato il passaggio segreto. Cella completata.';ui.refresh();
  const help=$('help-dialog').querySelectorAll('p');help[0].textContent='Nella borsa: clicca un oggetto per Esamina, Usa o le azioni speciali. Dopo Usa, clicca il bersaglio nella stanza. Esc annulla.';help[1].textContent='Interagisci con un oggetto per avvicinarti e osservarlo. Esamina per guardarlo da dove sei.';help[2].textContent='La borsa in basso a sinistra apre l’inventario (tasto I). Il diario a destra contiene audio, musica, istruzioni e obiettivi. Clic destro su un oggetto per scegliere un’azione; su touch tieni premuto. Scorri il dito per leggere i nomi senza agire; solleva e tocca brevemente per interagire. Il doppio clic resta dedicato alla corsa.';
- say('Una porta, una finestra e un topo. Da dove comincio?');
+ lockIntro(true);$('dialogue').textContent='';
  function shadow(x:number,y:number,rx:number,ry:number,opacity:number){ctx.save();ctx.translate(x,y);ctx.scale(rx,ry);const g=ctx.createRadialGradient(0,0,.1,0,0,1);g.addColorStop(0,`rgba(0,0,0,${opacity})`);g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,1,0,Math.PI*2);ctx.fill();ctx.restore();}
  function drawMouse(){
   const l=layers.find(l=>l.id==='mouse');if(!l?.cache||mouse.amount<=0)return;
@@ -151,7 +157,7 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
   const gait=advanceGait(phase,turning?yawStep*.35:step,turning?0:runBlend);phase=gait.phase;footsteps.play(gait.contacts);
   blend=THREE.MathUtils.damp(blend,turning?.62:step>.00001?Math.min(1,motion.speed/.25):0,7,dt);runBlend=THREE.MathUtils.damp(runBlend,THREE.MathUtils.clamp((motion.speed-WALK_SPEED)/(RUN_SPEED-WALK_SPEED),0,1),6,dt);
   actions[0].time=elapsed%actions[0].getClip().duration;actions[1].time=(phase/(Math.PI*2)%1)*actions[1].getClip().duration;actions[2].time=(phase/(Math.PI*2)%1)*actions[2].getClip().duration;actions[0].setEffectiveWeight(1-blend);actions[1].setEffectiveWeight(blend*(1-runBlend));actions[2].setEffectiveWeight(blend*runBlend);mixer.update(0);hero.rotation.y=motion.yaw;
-  const bodyBase=body.position.clone(),boneBases=poseBones.map(b=>b.quaternion.clone());
+  const bodyBase=body.position.clone(),boneBases=poseBones.map(b=>b.quaternion.clone()),headBase=head.quaternion.clone();
   let heldItem:Item='jaw';let seatWeight=0,heldJaw:{x:number;y:number}|null=null;
   const armBase=arm.quaternion.clone(),forearmBase=forearm.quaternion.clone(),torsoBase=torso.quaternion.clone();
   if(throwing){throwing.time+=dt;const pose=throwPose(throwing.time);arm.rotateX(pose.arm);forearm.rotateX(pose.forearm);torso.rotateX(pose.torso);hero.updateMatrixWorld(true);
@@ -176,12 +182,33 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
 
   host.dataset.action=revealing?'reveal':knocking?'knock':interaction?interaction.kind:throwing?(throwing.time<THROW_RELEASE?'windup':throwing.time<THROW_IMPACT?'bottle-flight':'glass-falling'):'';
   host.dataset.actionTime=interaction?.time.toFixed(2)??'';
-  const waking=Math.max(0,Math.min(1,(introTime-1.5)/6.5));hero.rotation.x=(1-waking)*1.28;hero.rotation.z=(1-waking)*.05;introOverlay.style.opacity=String(introTime<.6?1:Math.max(0,1-(introTime-.6)/1.4));if(introTime<8){const lines=['Dove sono finito?','Ricordo una porta... o forse una torta con la maniglia.','Perché ho la sensazione di aver litigato con un letto?'];introOverlay.textContent=introTime<2.4?'':lines[Math.min(2,Math.floor((introTime-2.4)/1.8))];}else introOverlay.textContent='';renderer.render(scene,camera);
+  const wake=wakeFrame(introTime);
+  hero.rotation.x=0;hero.rotation.z=0;hero.position.set(0,0,0);
+  if(wake.active){
+   host.dataset.introStage=wake.stage;introOverlay.style.opacity=String(wake.black);introOverlay.hidden=wake.black===0;
+   $('dialogue').textContent=wake.line;
+   hero.rotation.set(-Math.PI/2*wake.lie,motion.yaw*(1-wake.lie),0);
+   const pivot=new THREE.Vector3(0,.8,0);hero.position.copy(pivot).sub(pivot.clone().applyQuaternion(hero.quaternion));
+   head.rotateX(wake.head);arm.rotateX(wake.arm);poseBones[6].rotateX(-wake.arm);
+   poseBones[0].rotateX(-1.4*wake.seated);poseBones[1].rotateX(-1.4*wake.seated);
+   poseBones[2].rotateX(1.4*wake.seated);poseBones[3].rotateX(1.4*wake.seated);
+  }else if(!introFinished){introFinished=true;introOverlay.hidden=true;host.dataset.introStage='playing';lockIntro(false);say('Bon. Questa prigione non si lascerà da sola.');}
+  renderer.render(scene,camera);
   body.position.copy(bodyBase);poseBones.forEach((b,i)=>b.quaternion.copy(boneBases[i]));
-  arm.quaternion.copy(armBase);forearm.quaternion.copy(forearmBase);torso.quaternion.copy(torsoBase);
-  ctx.clearRect(0,0,780,559);ctx.save();ctx.translate(-120,0);ctx.imageSmoothingEnabled=false;ctx.drawImage(backdrop,0,0);for(const q of [[423,365,89,19],[577,335,43,12],[671,359,39,12]])shadow(q[0],q[1],q[2],q[3],.24);const visibleLayers=layers.filter(l=>l.id!=='mouse');for(const l of visibleLayers)drawCellLayer(ctx,l);drawMouse();puzzleArt.draw(ctx,puzzle);puzzleArt.drawSkull(ctx,puzzle,elapsed);puzzleArt.drawFragments(ctx,puzzle);const p=projectCell(motion.location),height=219.3975,width=height*192/224;shadow(p.x,p.y+1,19,7,.44);ctx.drawImage(renderer.domElement,p.x-6*seatWeight-(anchor.x+1)/2*width,p.y-40*seatWeight-(1-anchor.y)/2*height,width,height);
+  arm.quaternion.copy(armBase);forearm.quaternion.copy(forearmBase);torso.quaternion.copy(torsoBase);head.quaternion.copy(headBase);
+  ctx.clearRect(0,0,780,559);ctx.save();ctx.translate(-120,0);ctx.imageSmoothingEnabled=false;ctx.drawImage(backdrop,0,0);for(const q of [[423,365,89,19],[577,335,43,12],[671,359,39,12]])shadow(q[0],q[1],q[2],q[3],.24);const visibleLayers=layers.filter(l=>l.id!=='mouse');for(const l of visibleLayers)drawCellLayer(ctx,l);drawMouse();puzzleArt.draw(ctx,puzzle);puzzleArt.drawSkull(ctx,puzzle,elapsed);puzzleArt.drawFragments(ctx,puzzle);
+  const p=projectCell(motion.location),height=219.3975,width=height*192/224;
+  let introX=0,introY=0;
+  if(wake.active){
+   const centre=new THREE.Vector3(0,.8,0).project(camera),normalX=p.x+(centre.x-anchor.x)*width/2,normalY=p.y-(centre.y-anchor.y)*height/2;
+   const bedX=408+12*wake.lie,bedY=330-12*wake.lie;
+   introX=(bedX-normalX)*(1-wake.stand);introY=(bedY-normalY)*(1-wake.stand);
+   shadow(bedX,bedY+12,42,7,.25*(1-wake.stand));
+  }
+  shadow(p.x,p.y+1,19,7,.44*(wake.active?wake.stand:1));
+  ctx.drawImage(renderer.domElement,p.x+introX-6*seatWeight-(anchor.x+1)/2*width,p.y+introY-40*seatWeight-(1-anchor.y)/2*height,width,height);
   if(cellLayerOccludes('cabinet',.52,motion.location))puzzleArt.draw(ctx,puzzle);
-  for(const l of visibleLayers)if(!(l.id==='bed'&&seatWeight>0)&&cellLayerOccludes(l.id,l.depth,motion.location))drawCellLayer(ctx,l);
+  for(const l of visibleLayers)if(!(l.id==='bed'&&(seatWeight>0||wake.active))&&cellLayerOccludes(l.id,l.depth,motion.location))drawCellLayer(ctx,l);
   if(cellLayerOccludes('barrel',.82,motion.location))puzzleArt.drawFragments(ctx,puzzle);
   if(cellLayerOccludes('mouse',.94,motion.location))drawMouse();
   if(heldJaw)puzzleArt.drawHeld(ctx,heldItem,heldJaw.x,heldJaw.y);
