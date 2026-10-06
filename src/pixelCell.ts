@@ -95,7 +95,8 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
  $('sound').onclick=()=>{footsteps.toggle();audio.setEnabled(footsteps.enabled);void footsteps.unlock();$('sound').textContent=footsteps.enabled?'Audio: attivo':'Audio: spento';$('sound').setAttribute('aria-pressed',String(footsteps.enabled));};
  $('music').onclick=()=>{const enabled=audio.toggleMusic();$('music').textContent=enabled?'Musica: attiva':'Musica: spenta';$('music').setAttribute('aria-pressed',String(enabled));};
  const volumes=document.createElement('div');volumes.className='audio-volumes';
- volumes.innerHTML='<label>Effetti <output id="effects-level">100%</output><input id="effects-volume" aria-label="Volume effetti" type="range" min="0" max="100" value="100"></label><label>Musica <output id="music-level">2%</output><input id="music-volume" aria-label="Volume musica" type="range" min="0" max="100" value="2"></label>';
+  const musicPercent=Math.round(audio.getMusicVolume()*100);
+  volumes.innerHTML='<label>Effetti <output id="effects-level">100%</output><input id="effects-volume" aria-label="Volume effetti" type="range" min="0" max="100" value="100"></label><label>Musica <output id="music-level">'+musicPercent+'%</output><input id="music-volume" aria-label="Volume musica" type="range" min="0" max="100" value="'+musicPercent+'"></label>';
  $('settings-dialog').append(volumes);
  $('effects-volume').oninput=e=>{const v=Number((e.target as HTMLInputElement).value);footsteps.setVolume(v/100);audio.setEffectsVolume(v/100);$('effects-level').textContent=v+'%';void footsteps.unlock();void audio.unlock();};
  $('music-volume').oninput=e=>{const v=Number((e.target as HTMLInputElement).value);audio.setMusicVolume(v/100);$('music-level').textContent=v+'%';void audio.unlock();};

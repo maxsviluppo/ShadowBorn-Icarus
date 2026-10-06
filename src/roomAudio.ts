@@ -2,8 +2,10 @@ import type {PropKind} from './propMotion';
 /** Shared material sound library; every instance uses the same family of samples. */
 export class RoomAudio{
   enabled=true;musicEnabled=true;private effectsVolume=1;private musicVolume=.02;
+  constructor(){try{const saved=Number(localStorage.getItem('shadowborn-music-volume'));if(Number.isFinite(saved))this.musicVolume=Math.max(0,Math.min(1,saved));}catch{}}
   setEffectsVolume(v:number){this.effectsVolume=Math.max(0,Math.min(1,v));if(this.master&&this.ctx)this.master.gain.setTargetAtTime(this.enabled?.65*this.effectsVolume:0,this.ctx.currentTime,.02);}
-  setMusicVolume(v:number){this.musicVolume=Math.max(0,Math.min(1,v));if(this.music)this.music.volume=this.musicVolume;}
+  setMusicVolume(v:number){this.musicVolume=Math.max(0,Math.min(1,v));if(this.music)this.music.volume=this.musicVolume;try{localStorage.setItem('shadowborn-music-volume',String(this.musicVolume));}catch{}}
+  getMusicVolume(){return this.musicVolume;}
   played=0;last='';ready=false;
   private ctx:AudioContext|null=null;private master:GainNode|null=null;
   private music:HTMLAudioElement|null=null;private buffers=new Map<string,AudioBuffer>();
