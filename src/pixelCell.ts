@@ -55,9 +55,10 @@ export async function startPixelCell(){
  gl_FragColor.rgb=floor(clamp(gl_FragColor.rgb+threshold/levels,0.0,1.0)*levels+0.5)/levels;`);};m.customProgramCacheKey=()=>'barnaby-rgb565';if(m.map){m.map.minFilter=THREE.LinearMipmapLinearFilter;m.map.magFilter=THREE.NearestFilter;m.map.generateMipmaps=true;m.map.needsUpdate=true;}}}});
  const camera=new THREE.OrthographicCamera(-.9,.9,1.05,-1.05,.1,30);camera.position.set(6,5.7,6);camera.lookAt(0,.8,0);camera.updateMatrixWorld();const anchor=new THREE.Vector3(0,0,0).project(camera);
  const mixer=new THREE.AnimationMixer(hero);const actions=['Idle','Walk','Run'].map(name=>{const clip=THREE.AnimationClip.findByName(file.animations,name);if(!clip)throw new Error('Missing animation '+name);const a=mixer.clipAction(clip);a.play();a.paused=true;return a;});
- const motion=new Locomotion3D(CELL_METRES),footsteps=new Footsteps(),audio=new RoomAudio();let objectRun=false;let pending:CellObject|null=null,mode:'interact'|'examine'='interact',phase=0,blend=0,runBlend=0,elapsed=0,last=performance.now(),debug=false,lastTap={time:-1000,x:0,y:0};const seen=new Set<string>();let pendingVerb:Verb='interact',pendingItem:Item|undefined;
+ const motion=new Locomotion3D(CELL_METRES);motion.location={u:.45,v:.69};const footsteps=new Footsteps(),audio=new RoomAudio();let objectRun=false;let pending:CellObject|null=null,mode:'interact'|'examine'='interact',phase=0,blend=0,runBlend=0,elapsed=0,last=performance.now(),debug=false,lastTap={time:-1000,x:0,y:0};const seen=new Set<string>();let pendingVerb:Verb='interact',pendingItem:Item|undefined;
  let interaction:{kind:InteractionKind;time:number;committed:boolean;object:CellObject;verb:Verb;item?:Item}|null=null;
  const revealOverlay=document.createElement('div');revealOverlay.id='room-reveal';revealOverlay.hidden=true;revealOverlay.textContent='Dopo 10 minuti...';document.body.append(revealOverlay);
+ const introOverlay=document.createElement('div');introOverlay.id='wake-intro';introOverlay.textContent='';document.body.append(introOverlay);let introTime=0;
  let revealing:{time:number;swapped:boolean}|null=null;
  let knocking:{time:number;hits:number}|null=null;
  let throwing:{time:number;start:{x:number;y:number}|null;impact:boolean}|null=null;
@@ -79,12 +80,12 @@ export async function startPixelCell(){
   if(kind){interaction={kind,time:0,committed:false,object,verb:pendingVerb,item:pendingItem};motion.stop();return;}
 if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing={time:0,start:null,impact:false};motion.stop();say('Questa volta è vuota. Vediamo se la botte regge.');return;}const wasOpen=puzzle.cabinetOpen;const result=ui.execute(object.id,pendingVerb,pendingItem);if(wasOpen!==puzzle.cabinetOpen)audio.play('cabinet',puzzle.cabinetOpen,.65);say(result||object.description);seen.add(object.id);host.dataset.lastObject=object.id;host.dataset.cabinetOpen=String(puzzle.cabinetOpen);host.dataset.ropeCollected=String(puzzle.ropeCut);host.dataset.jawGiven=String(puzzle.jawGiven);}
  function select(object:CellObject,run:boolean,verb?:Verb,item?:Item){
-  if(throwing||interaction||skullDialogue.active||knocking||revealing||!puzzle.visible(object.id)||(object.id==='mouse'&&!mouse.selectable))return;
+  if(introTime<8||throwing||interaction||skullDialogue.active||knocking||revealing||!puzzle.visible(object.id)||(object.id==='mouse'&&!mouse.selectable))return;
   void footsteps.unlock();void audio.unlock();pendingVerb=verb??(mode==='examine'?'examine':ui.defaultVerb(object.id));pendingItem=item??ui.selected;
   if(object.id==='mouse'&&pendingVerb!=='examine'&&!pendingItem){pending=null;inspect(object);return;}
   if(pendingVerb==='examine'&&!pendingItem){pending=null;motion.stop();inspect(object);}else if(motion.go({...object.goal},run)){pending=object;}else say('Da qui non ci arrivo. Provo a fare il giro.');
  }
- function pointAction(event:PointerEvent,touchTarget?:Element){if(throwing||interaction||skullDialogue.active||knocking||revealing||event.button!==0)return;void footsteps.unlock();void audio.unlock();const rect=frame.getBoundingClientRect(),point={x:120+(event.clientX-rect.left)*780/rect.width,y:(event.clientY-rect.top)*559/rect.height};const run=event.timeStamp-lastTap.time<350&&Math.hypot(event.clientX-lastTap.x,event.clientY-lastTap.y)<20;lastTap={time:event.timeStamp,x:event.clientX,y:event.clientY};
+ function pointAction(event:PointerEvent,touchTarget?:Element){if(introTime<8||throwing||interaction||skullDialogue.active||knocking||revealing||event.button!==0)return;void footsteps.unlock();void audio.unlock();const rect=frame.getBoundingClientRect(),point={x:120+(event.clientX-rect.left)*780/rect.width,y:(event.clientY-rect.top)*559/rect.height};const run=event.timeStamp-lastTap.time<350&&Math.hypot(event.clientX-lastTap.x,event.clientY-lastTap.y)<20;lastTap={time:event.timeStamp,x:event.clientX,y:event.clientY};
   const hit=(touchTarget??event.target as Element).closest('[data-object]');if(hit){if(touchTarget){const object=cellObjects.find(o=>o.id===hit.getAttribute('data-object'));if(object)select(object,run);}else objectRun=run;return;}
   const object=cellObjects.find(o=>puzzle.visible(o.id)&&(o.id!=='mouse'||mouse.selectable)&&o.id!=='handle'&&contains(point,o.poly.map(p=>[...p])));if(object){select(object,run);return;}const target=unprojectCell(point);if(target.u<0||target.u>1||target.v<0||target.v>1)return;pending=null;if(!motion.go(target,run))say('Qui non posso passare.');
  }
@@ -143,7 +144,7 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
   ctx.drawImage(l.cache,690,364,40,10,690,364-Math.max(0,Math.sin(elapsed*4.7))*.5,40,10);
   ctx.restore();
  }
- function tick(now:number){requestAnimationFrame(tick);if(document.hidden||now-last<1000/30)return;const dt=Math.min((now-last)/1000,.10);last=now;elapsed+=dt;mouse.step(dt);const mouseHit=svg.querySelector<SVGElement>('[data-object=mouse]')!;mouseHit.style.pointerEvents=mouse.selectable?'all':'none';mouseHit.style.visibility=mouse.selectable?'visible':'hidden';mouseHit.setAttribute('tabindex',mouse.selectable?'0':'-1');host.dataset.mouse=mouse.phase;const previousYaw=motion.yaw;const step=motion.step(dt);
+ function tick(now:number){requestAnimationFrame(tick);if(document.hidden||now-last<1000/30)return;const dt=Math.min((now-last)/1000,.10);last=now;elapsed+=dt;introTime+=dt;mouse.step(dt);const mouseHit=svg.querySelector<SVGElement>('[data-object=mouse]')!;mouseHit.style.pointerEvents=mouse.selectable?'all':'none';mouseHit.style.visibility=mouse.selectable?'visible':'hidden';mouseHit.setAttribute('tabindex',mouse.selectable?'0':'-1');host.dataset.mouse=mouse.phase;const previousYaw=motion.yaw;const step=motion.step(dt);
   if(motion.arrived&&pending){const object=pending;const centre={x:object.poly.reduce((a,p)=>a+p[0],0)/object.poly.length,y:object.poly.reduce((a,p)=>a+p[1],0)/object.poly.length};const aim=unprojectCell(centre);if(motion.face(Math.atan2(aim.u-motion.location.u,aim.v-motion.location.v),dt)){pending=null;inspect(object);}}
   const yawStep=Math.abs(Math.atan2(Math.sin(motion.yaw-previousYaw),Math.cos(motion.yaw-previousYaw)));
   const turning=step<.00001&&yawStep>.0001;
@@ -175,7 +176,7 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
 
   host.dataset.action=revealing?'reveal':knocking?'knock':interaction?interaction.kind:throwing?(throwing.time<THROW_RELEASE?'windup':throwing.time<THROW_IMPACT?'bottle-flight':'glass-falling'):'';
   host.dataset.actionTime=interaction?.time.toFixed(2)??'';
-  renderer.render(scene,camera);
+  const waking=Math.max(0,Math.min(1,(introTime-1.5)/6.5));hero.rotation.x=(1-waking)*1.28;hero.rotation.z=(1-waking)*.05;introOverlay.style.opacity=String(introTime<.6?1:Math.max(0,1-(introTime-.6)/1.4));if(introTime<8){const lines=['Dove sono finito?','Ricordo una porta... o forse una torta con la maniglia.','Perché ho la sensazione di aver litigato con un letto?'];introOverlay.textContent=introTime<2.4?'':lines[Math.min(2,Math.floor((introTime-2.4)/1.8))];}else introOverlay.textContent='';renderer.render(scene,camera);
   body.position.copy(bodyBase);poseBones.forEach((b,i)=>b.quaternion.copy(boneBases[i]));
   arm.quaternion.copy(armBase);forearm.quaternion.copy(forearmBase);torso.quaternion.copy(torsoBase);
   ctx.clearRect(0,0,780,559);ctx.save();ctx.translate(-120,0);ctx.imageSmoothingEnabled=false;ctx.drawImage(backdrop,0,0);for(const q of [[423,365,89,19],[577,335,43,12],[671,359,39,12]])shadow(q[0],q[1],q[2],q[3],.24);const visibleLayers=layers.filter(l=>l.id!=='mouse');for(const l of visibleLayers)drawCellLayer(ctx,l);drawMouse();puzzleArt.draw(ctx,puzzle);puzzleArt.drawSkull(ctx,puzzle,elapsed);puzzleArt.drawFragments(ctx,puzzle);const p=projectCell(motion.location),height=219.3975,width=height*192/224;shadow(p.x,p.y+1,19,7,.44);ctx.drawImage(renderer.domElement,p.x-6*seatWeight-(anchor.x+1)/2*width,p.y-40*seatWeight-(1-anchor.y)/2*height,width,height);
@@ -191,3 +192,6 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
  }
  loading.remove();Object.assign(host.dataset,{ready:'true',room:'0.13.0',character:'Galeotto',background:'layered-2d'});requestAnimationFrame(tick);
 }
+
+
+
