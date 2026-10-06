@@ -40,5 +40,5 @@ export async function loadPuzzleArt(){
   if(!s.jugTaken)sprite(ctx,'jug',551,181,35,49);
   if(!s.cupTaken)sprite(ctx,'cup',600,214,23,24);
   if(s.cabinetOpen&&!s.grogTaken)sprite(ctx,'grog',565,277,19,31);
- },drawFragments(ctx:CanvasRenderingContext2D,s:CellPuzzle){if(s.bottleBroken){ctx.save();if(s.shardTaken){ctx.beginPath();ctx.rect(641,275,60,9);ctx.clip();}sprite(ctx,'broken',641,273,60,23);ctx.restore();}},drawSkull(ctx:CanvasRenderingContext2D,s:CellPuzzle){if(s.jawGiven)sprite(ctx,'jaw',265,313,29,14);/* Align the crystal inside the skull's eye socket. */if(s.eyeGiven)sprite(ctx,'eye',285,297,10,9);}};
+ },drawFragments(ctx:CanvasRenderingContext2D,s:CellPuzzle){if(s.bottleBroken){ctx.save();if(s.shardTaken){ctx.beginPath();ctx.rect(641,275,60,9);ctx.clip();}sprite(ctx,'broken',641,273,60,23);ctx.restore();}},drawSkull(ctx:CanvasRenderingContext2D,s:CellPuzzle){if(s.jawGiven)sprite(ctx,'jaw',265,313,29,14);/* Align the crystal inside the skull's eye socket. */if(s.eyeGiven)sprite(ctx,'eye',288,305,10,9);}};
 }
