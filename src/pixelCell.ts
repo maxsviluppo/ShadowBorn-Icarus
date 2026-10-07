@@ -189,9 +189,12 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
    $('dialogue').textContent=wake.line;
    hero.rotation.set(-Math.PI/2*wake.lie,motion.yaw*(1-wake.lie),0);
    const pivot=new THREE.Vector3(0,.8,0);hero.position.copy(pivot).sub(pivot.clone().applyQuaternion(hero.quaternion));
-   head.rotateX(wake.head);arm.rotateX(wake.arm);poseBones[6].rotateX(-wake.arm);
-   poseBones[0].rotateX(-1.4*wake.seated);poseBones[1].rotateX(-1.4*wake.seated);
-   poseBones[2].rotateX(1.4*wake.seated);poseBones[3].rotateX(1.4*wake.seated);
+   head.rotateX(wake.head);torso.rotateX(wake.torso);body.position.y-=wake.drop;
+   arm.rotateX(wake.arm);poseBones[6].rotateX(wake.arm*.85);
+   forearm.rotateX(wake.forearm);poseBones[7].rotateX(wake.forearm*.9);
+   poseBones[0].rotateX(-1.4*wake.leftLeg);poseBones[1].rotateX(-1.4*wake.rightLeg);
+   poseBones[2].rotateX(1.4*wake.leftLeg);poseBones[3].rotateX(1.4*wake.rightLeg);
+   poseBones[4].rotateX(wake.ankle);poseBones[5].rotateX(wake.ankle);
   }else if(!introFinished){introFinished=true;introOverlay.hidden=true;host.dataset.introStage='playing';lockIntro(false);say('Bon. Questa prigione non si lascerà da sola.');}
   renderer.render(scene,camera);
   body.position.copy(bodyBase);poseBones.forEach((b,i)=>b.quaternion.copy(boneBases[i]));
@@ -216,6 +219,7 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
   if(debug&&motion.path.length){ctx.beginPath();ctx.moveTo(p.x,p.y);for(const q of motion.path){const c=projectCell(q);ctx.lineTo(c.x,c.y);}ctx.strokeStyle='#e6c67a';ctx.lineWidth=1;ctx.stroke();}ctx.restore();
   $('map-player').setAttribute('cx',String(motion.location.u*100));$('map-player').setAttribute('cy',String(motion.location.v*100));$('status').textContent=motion.state==='running'?'Di corsa':motion.state==='walking'?'Un passo alla volta':motion.state==='braking'?'Rallento…':'In esplorazione';
   Object.assign(host.dataset,{motion:motion.state,walkable:String(walkable(motion.location)),u:motion.location.u.toFixed(5),v:motion.location.v.toFixed(5),pending:pending?.id??'',speed:motion.speed.toFixed(3)});
+  document.getElementById('boot-cover')?.remove();
  }
  loading.remove();Object.assign(host.dataset,{ready:'true',room:'0.13.0',character:'Galeotto',background:'layered-2d'});requestAnimationFrame(tick);
 }

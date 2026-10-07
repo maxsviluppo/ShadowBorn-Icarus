@@ -1,4 +1,5 @@
 import type {CellPuzzle,Item} from './cellPuzzle';
+import {skullMotion} from './skullMotion';
 export const puzzleArt:Record<Item,{file:string;crop:number[];label:string}>={
  jug:{file:'jug',crop:[375,85,280,380],label:'Brocca'},cup:{file:'cup',crop:[380,122,305,308],label:'Tazza'},
  eye:{file:'eye',crop:[310,90,445,380],label:'Occhio di cristallo'},grog:{file:'grog',crop:[365,40,300,475],label:'Bottiglia di grog'},
@@ -9,6 +10,11 @@ export const puzzleArt:Record<Item,{file:string;crop:number[];label:string}>={
 export const puzzleUrl=(file:string)=>file==='rope'?'/assets/pixel/rope-piece.jpg':(file==='bottle-empty'||file.startsWith('cabinet'))?`/assets/pixel/puzzle/${file}.png`:`/assets/pixel/puzzle/${file}.jpg`;
 export function inventoryArt(id:Item,label:string){const a=puzzleArt[id];return `<svg viewBox="${a.crop.join(' ')}" aria-hidden="true"><image href="${puzzleUrl(a.file)}" width="1024" height="559"/></svg>`;}
 export async function loadPuzzleArt(){
+ const door=new Image();door.src='/assets/pixel/cell-transparent.png';await door.decode();
+ // Separate the painted skull from the door so it can move before either gift.
+ const skullOutline=new Path2D('M261 289 L269 283 L281 281 L291 284 L298 291 L301 302 L297 313 L292 317 L291 326 L283 327 L279 331 L272 329 L271 325 L264 324 L260 318 L257 309 L257 300 Z');
+ const skull=document.createElement('canvas');skull.width=1024;skull.height=559;
+ const sc=skull.getContext('2d')!;sc.clip(skullOutline);sc.drawImage(door,0,0,1024,559);
  const images:Record<string,HTMLCanvasElement>={};
  await Promise.all(['jug','cup','eye','grog','bottle-empty','broken','shard','jaw','cabinet-open','cabinet-closed'].map(async file=>{
   const image=new Image();image.src=puzzleUrl(file);await image.decode();
@@ -40,5 +46,16 @@ export async function loadPuzzleArt(){
   if(!s.jugTaken)sprite(ctx,'jug',551,181,35,49);
   if(!s.cupTaken)sprite(ctx,'cup',600,214,23,24);
   if(s.cabinetOpen&&!s.grogTaken)sprite(ctx,'grog',565,277,19,31);
- },drawFragments(ctx:CanvasRenderingContext2D,s:CellPuzzle){if(s.bottleBroken){ctx.save();if(s.shardTaken){ctx.beginPath();ctx.rect(641,275,60,9);ctx.clip();}sprite(ctx,'broken',641,273,60,23);ctx.restore();}},drawSkull(ctx:CanvasRenderingContext2D,s:CellPuzzle,t=0){const window=Math.floor(t/1.65);const seed=Math.sin(window*12.9898)*43758.5453;const chance=seed-Math.floor(seed);const pulse=t-window*1.65;const active=chance>.28&&pulse<.62;const envelope=active?Math.sin(Math.min(1,pulse/.12)*Math.PI)*Math.max(0,1-(pulse-.12)/.5):0;const shakeX=Math.sin(t*56+window)*2.4*envelope,shakeY=Math.cos(t*43+window)*1.1*envelope,angle=Math.sin(t*49+window)*.035*envelope;ctx.save();ctx.translate(shakeX,shakeY);ctx.rotate(angle);if(s.jawGiven)sprite(ctx,'jaw',265,313,29,14);/* Align the crystal inside the skull's eye socket. */if(s.eyeGiven)sprite(ctx,'eye',288,305,10,9);ctx.restore();}};
+ },drawFragments(ctx:CanvasRenderingContext2D,s:CellPuzzle){if(s.bottleBroken){ctx.save();if(s.shardTaken){ctx.beginPath();ctx.rect(641,275,60,9);ctx.clip();}sprite(ctx,'broken',641,273,60,23);ctx.restore();}},drawSkull(ctx:CanvasRenderingContext2D,s:CellPuzzle,t=0){
+  const pose=skullMotion(t);
+  if(pose.active){
+   // Restore wood only inside the original silhouette, never a rectangular patch.
+   ctx.save();ctx.clip(skullOutline);ctx.drawImage(door,256,333,46,10,256,281,46,51);ctx.restore();
+  }
+  ctx.save();ctx.translate(279+pose.x,303+pose.y);ctx.rotate(pose.angle);ctx.translate(-279,-303);
+  if(pose.active)ctx.drawImage(skull,0,0);
+  if(s.jawGiven)sprite(ctx,'jaw',265,313,29,14);
+  if(s.eyeGiven)sprite(ctx,'eye',288,305,10,9);
+  ctx.restore();
+ }};
 }
