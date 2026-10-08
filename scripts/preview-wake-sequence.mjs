@@ -1,5 +1,5 @@
 import fs from 'node:fs';import ts from 'typescript';import sharp from 'sharp';import * as THREE from 'three';
-const out='art/guy-character';
+const out='art/shirt-character';
 const code=ts.transpileModule(fs.readFileSync('src/wakeIntro.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.ES2022}}).outputText;
 const {wakeFrame}=await import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));
 const poses=[0,11.8,13,14.5,16,18.8,19.5,20.5,22.5].map((t,i)=>({name:'sequence-'+i,time:t,...wakeFrame(t)}));

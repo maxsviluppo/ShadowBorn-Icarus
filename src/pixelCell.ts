@@ -30,7 +30,7 @@ export async function startPixelCell(){
  const background=new Image();background.src='/assets/pixel/cell-transparent.png';
  const revealedBackground=new Image();revealedBackground.src='/assets/pixel/cell-secret-door.png';
  const layers=(await loadCellLayers()).filter(l=>!l.id.startsWith('cabinet'));const puzzle=new CellPuzzle(),puzzleArt=await loadPuzzleArt();
- const [file]=await Promise.all([new GLTFLoader().loadAsync('/assets/3d/guy.glb?v=0.15.1'),background.decode(),revealedBackground.decode()]);
+ const [file]=await Promise.all([new GLTFLoader().loadAsync('/assets/3d/shirt-hero.glb?v=0.16.0'),background.decode(),revealedBackground.decode()]);
  const backdrop=document.createElement('canvas');backdrop.width=1024;backdrop.height=559;const bg=backdrop.getContext('2d')!;bg.imageSmoothingEnabled=false;bg.drawImage(background,0,0,1024,559);
  const frame=document.createElement('div');Object.assign(frame.style,{position:'absolute',left:'50%',top:'50%',transform:'translate(-50%,-50%)'});
  const canvas=document.createElement('canvas');canvas.width=780;canvas.height=559;canvas.setAttribute('aria-label','Cella pixel art: clicca sul pavimento per camminare');Object.assign(canvas.style,{width:'100%',height:'100%',display:'block',imageRendering:'pixelated',touchAction:'none'});frame.append(canvas);host.append(frame);const ctx=canvas.getContext('2d')!;
@@ -76,6 +76,9 @@ export async function startPixelCell(){
  let throwing:{time:number;start:{x:number;y:number}|null;impact:boolean}|null=null;
  const body=hero.getObjectByName('Body')!;
  const poseBones=['LegL','LegR','ShinL','ShinR','FootL','FootR','ArmL','ForearmL'].map(n=>hero.getObjectByName(n)!);
+ hero.updateMatrixWorld(true);
+ const jointHeight=(n:string)=>hero.getObjectByName(n)!.getWorldPosition(new THREE.Vector3()).y;
+ const interactionLegs={upper:jointHeight('LegL')-jointHeight('ShinL'),lower:jointHeight('ShinL')-jointHeight('FootL')};
  const arm=hero.getObjectByName('ArmR')!,forearm=hero.getObjectByName('ForearmR')!,torso=hero.getObjectByName('Torso')!;
  let dialogueTimer:ReturnType<typeof setTimeout>|undefined;
  const say=(s:string)=>{clearTimeout(dialogueTimer);$('dialogue').textContent=s.replace(/[\u00ab\u00bb\u201c\u201d]/g,'');dialogueTimer=setTimeout(()=>{$('dialogue').textContent='';},7000);};
@@ -168,24 +171,24 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
   let heldItem:Item='jaw';let seatWeight=0,heldJaw:{x:number;y:number}|null=null;
   const armBase=arm.quaternion.clone(),forearmBase=forearm.quaternion.clone(),torsoBase=torso.quaternion.clone();
   if(throwing){throwing.time+=dt;const pose=throwPose(throwing.time);arm.rotateX(pose.arm);forearm.rotateX(pose.forearm);torso.rotateX(pose.torso);hero.updateMatrixWorld(true);
-   const hand=forearm.localToWorld(new THREE.Vector3(0,0,-.20)).project(camera),feet=projectCell(motion.location),h=219.3975,w=h*192/224;
+   const hand=hero.getObjectByName('HandR')!.getWorldPosition(new THREE.Vector3()).project(camera),feet=projectCell(motion.location),h=219.3975,w=h*192/224;
    const handScreen={x:feet.x+(hand.x-anchor.x)*w/2,y:feet.y-(hand.y-anchor.y)*h/2};
    if(throwing.time<THROW_RELEASE||!throwing.start)throwing.start=handScreen;
    if(throwing.time>=THROW_IMPACT&&!throwing.impact){throwing.impact=true;audio.glassBreak();}
    if(throwing.time>=THROW_DURATION){throwing=null;say(ui.execute('barrel','interact','bottle'));}
   }
   if(interaction){
-   interaction.time+=dt;const a=interaction,p=interactionPose(a.kind,a.time);seatWeight=a.kind==='sit'?p.weight:0;
+   interaction.time+=dt;const a=interaction,p=interactionPose(a.kind,a.time,interactionLegs);seatWeight=a.kind==='sit'?p.weight:0;
    body.position.y-=p.drop;torso.rotateX(p.torso);arm.rotateX(p.arm);forearm.rotateX(p.forearm);
    poseBones[0].rotateX(p.thigh);poseBones[1].rotateX(p.thigh);poseBones[2].rotateX(p.knee);poseBones[3].rotateX(p.knee);poseBones[4].rotateX(p.ankle);poseBones[5].rotateX(p.ankle);poseBones[6].rotateX(p.arm*.55);poseBones[7].rotateX(p.forearm);
    if(a.kind==='sit')hero.rotation.y+=Math.PI*p.weight;
-   if(a.kind==='give'&&!a.committed){heldItem=a.item??'jaw';hero.updateMatrixWorld(true);const hand=forearm.localToWorld(new THREE.Vector3(0,0,-.20)).project(camera),feet=projectCell(motion.location);heldJaw={x:feet.x+(hand.x-anchor.x)*219.3975*192/224/2,y:feet.y-(hand.y-anchor.y)*219.3975/2};}
+   if(a.kind==='give'&&!a.committed){heldItem=a.item??'jaw';hero.updateMatrixWorld(true);const hand=hero.getObjectByName('HandR')!.getWorldPosition(new THREE.Vector3()).project(camera),feet=projectCell(motion.location);heldJaw={x:feet.x+(hand.x-anchor.x)*219.3975*192/224/2,y:feet.y-(hand.y-anchor.y)*219.3975/2};}
 
    if(!a.committed&&a.time>=interactionContact[a.kind]){a.committed=true;if(a.kind==='sit')say('Solo un momento di riposo... poi torno a cercare una via d’uscita.');else {finishInteraction(a.object,a.verb,a.item);if(a.kind==='give'){audio.click();clearTimeout(dialogueTimer);$('dialogue').textContent='';}}}
    if(a.time>=interactionDuration[a.kind]){interaction=null;if(a.kind==='give')skullDialogue.open(a.item as 'eye'|'jaw');}
   }
   if(revealing){revealing.time+=dt;const r=revealFrame(revealing.time);revealOverlay.style.opacity=String(r.opacity);revealOverlay.style.color=r.caption?'#fff0c0':'transparent';if(r.uncovered&&!revealing.swapped){revealing.swapped=true;puzzle.doorUncovered=true;bg.clearRect(0,0,1024,559);bg.drawImage(revealedBackground,0,0,1024,559);ui.refresh();}if(r.done){revealing=null;revealOverlay.hidden=true;say('Ecco la porta! Ora devo capire come azionare il meccanismo.');}}
-  if(knocking){knocking.time+=dt;const pose=knockPose(knocking.time);arm.rotateX(pose.arm);forearm.rotateX(pose.forearm);hero.updateMatrixWorld(true);const hand=forearm.localToWorld(new THREE.Vector3(0,0,-.20)).project(camera),feet=projectCell(motion.location);heldItem='cup';heldJaw={x:feet.x+(hand.x-anchor.x)*219.3975*192/224/2,y:feet.y-(hand.y-anchor.y)*219.3975/2};if(knocking.hits<3&&knocking.time>=KNOCK_TIMES[knocking.hits]){audio.click();knocking.hits++;}if(knocking.time>=KNOCK_DURATION){knocking=null;heldJaw=null;say(ui.execute('secret-door','interact','cup'));($('journal-dialog') as HTMLDialogElement).showModal();}}
+  if(knocking){knocking.time+=dt;const pose=knockPose(knocking.time);arm.rotateX(pose.arm);forearm.rotateX(pose.forearm);hero.updateMatrixWorld(true);const hand=hero.getObjectByName('HandR')!.getWorldPosition(new THREE.Vector3()).project(camera),feet=projectCell(motion.location);heldItem='cup';heldJaw={x:feet.x+(hand.x-anchor.x)*219.3975*192/224/2,y:feet.y-(hand.y-anchor.y)*219.3975/2};if(knocking.hits<3&&knocking.time>=KNOCK_TIMES[knocking.hits]){audio.click();knocking.hits++;}if(knocking.time>=KNOCK_DURATION){knocking=null;heldJaw=null;say(ui.execute('secret-door','interact','cup'));($('journal-dialog') as HTMLDialogElement).showModal();}}
 
   host.dataset.action=revealing?'reveal':knocking?'knock':interaction?interaction.kind:throwing?(throwing.time<THROW_RELEASE?'windup':throwing.time<THROW_IMPACT?'bottle-flight':'glass-falling'):'';
   host.dataset.actionTime=interaction?.time.toFixed(2)??'';
@@ -234,7 +237,7 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
   Object.assign(host.dataset,{motion:motion.state,walkable:String(walkable(motion.location)),u:motion.location.u.toFixed(5),v:motion.location.v.toFixed(5),pending:pending?.id??'',speed:motion.speed.toFixed(3)});
   document.getElementById('boot-cover')?.remove();
  }
- loading.remove();Object.assign(host.dataset,{ready:'true',room:'0.15.0',character:'Guy',background:'layered-2d'});requestAnimationFrame(tick);
+ loading.remove();Object.assign(host.dataset,{ready:'true',room:'0.16.0',character:'ShirtHero',background:'layered-2d'});requestAnimationFrame(tick);
 }
 
 

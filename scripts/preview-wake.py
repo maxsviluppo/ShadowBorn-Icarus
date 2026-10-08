@@ -1,9 +1,9 @@
 import bpy,math,json
 from pathlib import Path
 from mathutils import Vector,Quaternion
-R=Path(__file__).resolve().parents[1];O=R/'art/guy-character'
+R=Path(__file__).resolve().parents[1];O=R/'art/shirt-character'
 bpy.ops.wm.read_factory_settings(use_empty=True)
-bpy.ops.import_scene.gltf(filepath=str(R/'public/assets/3d/guy.glb'))
+bpy.ops.import_scene.gltf(filepath=str(R/'public/assets/3d/shirt-hero.glb'))
 rig=next(o for o in bpy.context.scene.objects if o.type=='ARMATURE')
 for tr in rig.animation_data.nla_tracks:tr.mute=True
 rig.animation_data.action=bpy.data.actions['Idle'];bpy.context.scene.frame_set(1)

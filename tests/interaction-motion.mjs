@@ -7,4 +7,6 @@ for(const kind of ['sit','cabinet','cut','give']){
  for(let t=0;t<duration[kind];t+=1/60){const p=pose(kind,t);assert.ok(Object.values(p).every(Number.isFinite));assert.ok(p.knee>=0);assert.ok(Math.abs(p.thigh+p.knee+p.ankle)<1e-9);const length=.325*Math.cos(p.thigh)+.310*Math.cos(p.thigh+p.knee);assert.ok(Math.abs(length+p.drop-.635)<1e-9,'feet stay at floor height');}
 }
 assert.ok(pose('cut',1.2).drop>pose('cabinet',1.2).drop);
+const legs={upper:.36,lower:.32},adapted=pose('cut',1.2,legs);
+assert.ok(Math.abs(adapted.drop+legs.upper*Math.cos(adapted.thigh)+legs.lower*Math.cos(adapted.thigh+adapted.knee)-legs.upper-legs.lower)<1e-9,'interaction drop follows replacement character leg lengths');
 console.log('PASS: interaction transitions, forward knees, planted feet and contact timing.');
