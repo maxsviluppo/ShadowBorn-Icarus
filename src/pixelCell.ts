@@ -30,7 +30,7 @@ export async function startPixelCell(){
  const background=new Image();background.src='/assets/pixel/cell-transparent.png';
  const revealedBackground=new Image();revealedBackground.src='/assets/pixel/cell-secret-door.png';
  const layers=(await loadCellLayers()).filter(l=>!l.id.startsWith('cabinet'));const puzzle=new CellPuzzle(),puzzleArt=await loadPuzzleArt();
- const [file]=await Promise.all([new GLTFLoader().loadAsync('/assets/3d/shirt-hero.glb?v=0.16.2'),background.decode(),revealedBackground.decode()]);
+ const [file]=await Promise.all([new GLTFLoader().loadAsync('/assets/3d/shirt-hero.glb?v=0.17.0'),background.decode(),revealedBackground.decode()]);
  const backdrop=document.createElement('canvas');backdrop.width=1024;backdrop.height=559;const bg=backdrop.getContext('2d')!;bg.imageSmoothingEnabled=false;bg.drawImage(background,0,0,1024,559);
  const frame=document.createElement('div');Object.assign(frame.style,{position:'absolute',left:'50%',top:'50%',transform:'translate(-50%,-50%)'});
  const canvas=document.createElement('canvas');canvas.width=780;canvas.height=559;canvas.setAttribute('aria-label','Cella pixel art: clicca sul pavimento per camminare');Object.assign(canvas.style,{width:'100%',height:'100%',display:'block',imageRendering:'pixelated',touchAction:'none'});frame.append(canvas);host.append(frame);const ctx=canvas.getContext('2d')!;
@@ -56,7 +56,7 @@ export async function startPixelCell(){
  vec2 cell=mod(floor(gl_FragCoord.xy),2.0);
  float threshold=(cell.x==0.0?(cell.y==0.0?0.0:3.0):(cell.y==0.0?2.0:1.0))/4.0-0.375;
  vec3 levels=vec3(31.0,63.0,31.0);
- gl_FragColor.rgb=floor(clamp(gl_FragColor.rgb+threshold/levels,0.0,1.0)*levels+0.5)/levels;`);};m.customProgramCacheKey=()=>'shirt-reference-pigment-rgb565-v3';if(m.map){m.map.minFilter=THREE.LinearMipmapLinearFilter;m.map.magFilter=THREE.NearestFilter;m.map.generateMipmaps=true;m.map.needsUpdate=true;}}}});
+ gl_FragColor.rgb=floor(clamp(gl_FragColor.rgb+threshold/levels,0.0,1.0)*levels+0.5)/levels;`);};m.customProgramCacheKey=()=>'relaxed-reference-pigment-rgb565-v1';if(m.map){m.map.minFilter=THREE.LinearMipmapLinearFilter;m.map.magFilter=THREE.NearestFilter;m.map.generateMipmaps=true;m.map.needsUpdate=true;}}}});
  const camera=new THREE.OrthographicCamera(-.9,.9,1.05,-1.05,.1,30);camera.position.set(6,5.7,6);camera.lookAt(0,.8,0);camera.updateMatrixWorld();const anchor=new THREE.Vector3(0,0,0).project(camera);
  const mixer=new THREE.AnimationMixer(hero);const actions=['Idle','Walk','Run'].map(name=>{const clip=THREE.AnimationClip.findByName(file.animations,name);if(!clip)throw new Error('Missing animation '+name);const a=mixer.clipAction(clip);a.play();a.paused=true;return a;});
  const motion=new Locomotion3D(CELL_METRES);motion.location={...WAKE_START};const footsteps=new Footsteps(),audio=new RoomAudio();let objectRun=false;let pending:CellObject|null=null,mode:'interact'|'examine'='interact',phase=0,blend=0,runBlend=0,elapsed=0,last=performance.now(),debug=false,lastTap={time:-1000,x:0,y:0};const seen=new Set<string>();let pendingVerb:Verb='interact',pendingItem:Item|undefined;

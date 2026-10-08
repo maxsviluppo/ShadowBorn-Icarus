@@ -1,7 +1,7 @@
 import bpy,math,json
 from pathlib import Path
 from mathutils import Vector,Quaternion
-R=Path(__file__).resolve().parents[1];O=R/'art/shirt-character'
+R=Path(__file__).resolve().parents[1];O=R/'art/relaxed-character'
 bpy.ops.wm.read_factory_settings(use_empty=True)
 bpy.ops.import_scene.gltf(filepath=str(R/'public/assets/3d/shirt-hero.glb'))
 rig=next(o for o in bpy.context.scene.objects if o.type=='ARMATURE')
@@ -12,7 +12,7 @@ rig.animation_data.action=None
 roots=[o for o in bpy.context.scene.objects if o.parent is None]
 wrapper=bpy.data.objects.new('RuntimeRoot',None);bpy.context.scene.collection.objects.link(wrapper)
 for o in roots:o.parent=wrapper
-s=bpy.context.scene;s.render.engine='BLENDER_WORKBENCH';s.display.shading.light='STUDIO';s.display.shading.color_type='TEXTURE';s.render.resolution_x=192;s.render.resolution_y=224;s.render.resolution_percentage=100;s.render.film_transparent=True
+s=bpy.context.scene;s.render.engine='BLENDER_WORKBENCH';s.display.shading.light='STUDIO';s.display.shading.color_type='TEXTURE';s.display.shading.show_specular_highlight=False;s.render.resolution_x=192;s.render.resolution_y=224;s.render.resolution_percentage=100;s.render.film_transparent=True
 bpy.ops.object.camera_add(location=(6,-6,5.7));cam=bpy.context.object;cam.data.type='ORTHO';cam.data.ortho_scale=2.1;cam.rotation_euler=(Vector((0,0,.8))-cam.location).to_track_quat('-Z','Y').to_euler();s.camera=cam
 posefile=O/'wake-poses.json'
 poses=json.loads(posefile.read_text()) if posefile.exists() else [dict(name=n,lie=l,leftLeg=k,rightLeg=k) for n,l,k in [('lying',1,0),('seated',0,1),('standing',0,0)]]
