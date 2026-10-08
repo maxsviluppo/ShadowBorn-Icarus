@@ -30,7 +30,7 @@ export async function startPixelCell(){
  const background=new Image();background.src='/assets/pixel/cell-transparent.png';
  const revealedBackground=new Image();revealedBackground.src='/assets/pixel/cell-secret-door.png';
  const layers=(await loadCellLayers()).filter(l=>!l.id.startsWith('cabinet'));const puzzle=new CellPuzzle(),puzzleArt=await loadPuzzleArt();
- const [file]=await Promise.all([new GLTFLoader().loadAsync('/assets/3d/guy.glb?v=0.15.0'),background.decode(),revealedBackground.decode()]);
+ const [file]=await Promise.all([new GLTFLoader().loadAsync('/assets/3d/guy.glb?v=0.15.1'),background.decode(),revealedBackground.decode()]);
  const backdrop=document.createElement('canvas');backdrop.width=1024;backdrop.height=559;const bg=backdrop.getContext('2d')!;bg.imageSmoothingEnabled=false;bg.drawImage(background,0,0,1024,559);
  const frame=document.createElement('div');Object.assign(frame.style,{position:'absolute',left:'50%',top:'50%',transform:'translate(-50%,-50%)'});
  const canvas=document.createElement('canvas');canvas.width=780;canvas.height=559;canvas.setAttribute('aria-label','Cella pixel art: clicca sul pavimento per camminare');Object.assign(canvas.style,{width:'100%',height:'100%',display:'block',imageRendering:'pixelated',touchAction:'none'});frame.append(canvas);host.append(frame);const ctx=canvas.getContext('2d')!;

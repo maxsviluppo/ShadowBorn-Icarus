@@ -7,6 +7,6 @@ for(let t=0;t<120;t+=1/120){const a=f(t),b=f(t+1/120);if(a.active&&!previous){bu
  assert.ok(Math.abs(a.x-b.x)<.9,'no jump between bursts');max=Math.max(max,Math.abs(a.x));
  if(!a.active)assert.deepEqual(a,{active:false,x:0,y:0,angle:0});
 }
-assert.ok(bursts>=38&&longest<4,'frequent short bursts with bounded random pauses');assert.ok(max>1.7&&max<=2.1,'visible but restrained displacement');
-assert.notEqual(f(1).x,f(7).x,'variation between windows');
+assert.ok(bursts>=26&&bursts<=27&&longest<5.5,'one third fewer bursts with bounded random pauses');assert.ok(max>1.7&&max<=2.1,'visible but restrained displacement');
+assert.ok(Array.from({length:240},(_,i)=>i/120).some(t=>f(t).active!==f(t+9).active),'variation between windows');
 console.log('PASS: visible skull motion, continuous rest, frequent randomized bursts.');

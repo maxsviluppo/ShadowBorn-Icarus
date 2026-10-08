@@ -1,6 +1,6 @@
 import bpy,math,json
 from pathlib import Path
-from mathutils import Vector,Matrix
+from mathutils import Vector,Matrix,Quaternion
 R=Path(__file__).resolve().parents[1];O=R/'art/guy-character'
 bpy.ops.wm.open_mainfile(filepath=str(O/('Guy-GameSource.blend' if (O/'Guy-GameSource.blend').exists() else 'Guy-Originale.blend')))
 mesh=next(o for o in bpy.context.scene.objects if o.type=='MESH');mesh.name='Guy_Skin'
@@ -31,7 +31,7 @@ scale=1.6/height
 shoulders={s:Vector((sign*.12,0,.805)) for s,sign in [('L',-1),('R',1)]}
 hips={s:Vector((sign*.075,0,.50)) for s,sign in [('L',-1),('R',1)]}
 armrots={s:Matrix.Rotation(sign*math.radians(35),4,'Y') for s,sign in [('L',-1),('R',1)]}
-legrots={s:Matrix.Rotation(sign*math.radians(15),4,'Y') for s,sign in [('L',-1),('R',1)]}
+legrots={s:Matrix.Rotation(sign*math.radians(20),4,'Y') for s,sign in [('L',-1),('R',1)]}
 def neutral(p,name):
  p=p.copy()
  if name.startswith(('Arm','Forearm')):
@@ -42,6 +42,13 @@ def neutral(p,name):
 for bone in rig.data.bones:mesh.vertex_groups.new(name=bone.name)
 for v in mesh.data.vertices:
  w={n:a for n,a in weights(v.co).items() if a>1e-6};total=sum(w.values());w={n:a/total for n,a in w.items()}
+ # Roll the distal forearms and hands about their anatomical axis, without
+ # scaling the fingers or shoulders. Gradual twist avoids a wrist seam.
+ if abs(v.co.x)>.215 and v.co.z>.51:
+  sign=1 if v.co.x>0 else -1
+  elbow=Vector((sign*.215,0,.695));axis=Vector((sign*.095,0,-.11)).normalized()
+  twist=sign*math.radians(75)*smooth(.215,.30,abs(v.co.x))
+  v.co=elbow+Quaternion(axis,twist)@(v.co-elbow)
  v.co=sum((neutral(v.co,n)*a for n,a in w.items()),Vector())
  for n,a in w.items():mesh.vertex_groups[n].add([v.index],a,'REPLACE')
 floor=min(v.co.z for v in mesh.data.vertices);fit=1.6/(max(v.co.z for v in mesh.data.vertices)-floor)
@@ -68,5 +75,5 @@ bpy.ops.export_scene.gltf(filepath=str(R/'public/assets/3d/guy.glb'),export_form
 for tr in rig.animation_data.nla_tracks:tr.mute=True
 rig.animation_data.action=bpy.data.actions.get('Barnaby_Idle');bpy.context.scene.frame_set(1)
 bpy.ops.wm.save_as_mainfile(filepath=str(O/'Guy-Animato.blend'))
-(O/'build-info.json').write_text(json.dumps({'sourceHeight':height,'uniformScale':scale,'targetHeight':1.6,'triangles':len(mesh.data.polygons),'armRotationDegrees':35,'legRotationDegrees':15,'texture':'original colour map, full resolution','actions':[a.name for a in bpy.data.actions]},indent=2),encoding='utf-8')
+(O/'build-info.json').write_text(json.dumps({'sourceHeight':height,'uniformScale':scale,'targetHeight':1.6,'triangles':len(mesh.data.polygons),'armRotationDegrees':35,'legRotationDegrees':20,'palmTwistDegrees':75,'texture':'original colour map, full resolution','actions':[a.name for a in bpy.data.actions]},indent=2),encoding='utf-8')
 print('GUY_READY',len(mesh.data.polygons),flush=True)
