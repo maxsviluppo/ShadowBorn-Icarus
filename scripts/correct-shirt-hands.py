@@ -29,7 +29,19 @@ for v in bm.verts:
  v.co.z=center.z+(v.co.z-center.z)*(1-.3*t)
 for sign,(verts,boundary,center) in groups.items():
  target=groups[-sign][2]+Vector((-sign*.014,0,0))
- for v in verts:v.co=target+roll@swap@(v.co-center)*.7
+ for v in verts:
+  delta=roll@swap@(v.co-center)*.7
+  # Relaxed C-shaped fingers from the standing reference, not an open fan.
+  outward=-sign*delta.x
+  finger=max(0,outward-.034)
+  thumb=delta.y<-.018 and outward<.050
+  if finger>0 and not thumb:
+   radius=.045/.95;angle=min(1.15,finger/radius)
+   delta.x=-sign*(.034+math.sin(angle)*radius)
+   delta.y-=(1-math.cos(angle))*radius
+  # Rotate the relaxed palm inward; the thumb stays toward the front.
+  delta=Matrix.Rotation(math.pi/2,4,'X')@delta
+  v.co=target+delta
  # Join the transformed hand ring to the opposite original forearm ring.
  arm_edges=[e for e in bm.edges if e.is_boundary and e not in boundary
   and all(abs(v.co.x+sign*cut)<1e-5 for v in e.verts)

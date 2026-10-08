@@ -7,8 +7,8 @@ export const CHARACTER_TEXTURE_GRADE=`
  vec3 cellPigment=max(mix(vec3(clothLuma),diffuseColor.rgb,1.06),vec3(0.0));
  // Open the painted shadows and keep the reference's ivory shirt, brown leather
  // and warm skin readable at the room's small pixel resolution.
- cellPigment=pow(cellPigment,vec3(0.88))*vec3(1.04,1.0,0.93);
+ cellPigment=pow(cellPigment,vec3(0.78))*vec3(1.05,1.025,0.97);
  cellPigment+=vec3(0.010,0.006,0.003)*(1.0-clothLuma);
- diffuseColor.rgb=min(cellPigment,vec3(0.92,0.88,0.79));
+ diffuseColor.rgb=min(cellPigment,vec3(0.97,0.93,0.84));
 #endif
 `;
