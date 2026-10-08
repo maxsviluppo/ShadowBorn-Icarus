@@ -17,6 +17,8 @@ for pose in json.loads((O/'idle-poses.json').read_text()):
  for p in rig.pose.bones:p.rotation_quaternion=bases[p.name].copy()
  for name,key,zkey in [('Head','head',None),('ArmR','armR','armRZ'),('ArmL','armL','armLZ'),('ForearmR','forearmR',None),('ForearmL','forearmL',None)]:
   p=rig.pose.bones[name];p.rotation_mode='QUATERNION';p.rotation_quaternion=p.rotation_quaternion@Quaternion((0,0,1),pose.get(zkey,0))@Quaternion((1,0,0),pose[key])
+  if name=='Head':p.rotation_quaternion=p.rotation_quaternion@Quaternion((0,0,1),pose.get('headYaw',0))
+  if name in ['ArmR','ForearmR']:p.rotation_quaternion=Quaternion((0,1,0),pose.get('armRY' if name=='ArmR' else 'forearmRY',0))@p.rotation_quaternion
   if name=='ForearmR':p.rotation_quaternion=p.rotation_quaternion@Quaternion((0,0,1),pose.get('forearmRZ',0))
  s.render.filepath=str(O/(pose['name']+'.png'));bpy.ops.render.render(write_still=True)
 

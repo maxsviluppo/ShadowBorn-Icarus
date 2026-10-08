@@ -200,7 +200,7 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
   skullWasMoving=skullMoving;
   const idle=idleGestures.step(dt,introFinished&&motion.arrived&&!pending&&!turning&&!interaction&&!throwing&&!knocking&&!revealing&&!skullDialogue.active&&!document.querySelector('dialog[open]'));
   host.dataset.idleGesture=idle?.kind??'';
-  if(idle){head.rotateX(idle.head);arm.rotateZ(idle.armRZ);arm.rotateX(idle.armR);forearm.rotateX(idle.forearmR);forearm.rotateZ(idle.forearmRZ);poseBones[6].rotateZ(idle.armLZ);poseBones[6].rotateX(idle.armL);poseBones[7].rotateX(idle.forearmL);}
+  if(idle){head.rotateX(idle.head);head.rotateZ(idle.headYaw);arm.rotateY(idle.armRY);forearm.rotateY(idle.forearmRY);arm.rotateZ(idle.armRZ);arm.rotateX(idle.armR);forearm.rotateX(idle.forearmR);forearm.rotateZ(idle.forearmRZ);poseBones[6].rotateZ(idle.armLZ);poseBones[6].rotateX(idle.armL);poseBones[7].rotateX(idle.forearmL);}
   hero.rotation.x=0;hero.rotation.z=0;hero.position.set(0,0,0);
   if(wake.active){
    host.dataset.introStage=wake.stage;introOverlay.style.opacity=String(wake.black);introOverlay.hidden=wake.black===0;

@@ -6,7 +6,7 @@ const load=async path=>{
 };
 const out='art/relaxed-character';fs.mkdirSync(out,{recursive:true});
 const {idleGesturePose}=await load('src/idleGestures.ts');
-fs.writeFileSync(`${out}/idle-poses.json`,JSON.stringify(['hair','sleeve'].flatMap(kind=>[.8,1.6].map(t=>({name:`${kind}-${t}`,...idleGesturePose(kind,t)})))));
+fs.writeFileSync(`${out}/idle-poses.json`,JSON.stringify(['waist','look'].flatMap(kind=>[1,2,3.2].map(t=>({name:`${kind}-${t}`,...idleGesturePose(kind,t)})))));
 const {wakeFrame}=await load('src/wakeIntro.ts');
 fs.writeFileSync(`${out}/wake-poses.json`,JSON.stringify([0,11.8,13,14.5,16,18.8,19.5,20.5,22.5].map((t,i)=>({name:`sequence-${i}`,time:t,...wakeFrame(t)}))));
 const {interactionPose,interactionContact}=await load('src/interactionMotion.ts');
