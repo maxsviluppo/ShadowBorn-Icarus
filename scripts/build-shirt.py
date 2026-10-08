@@ -8,6 +8,7 @@ bpy.context.view_layer.objects.active=mesh;bpy.ops.object.transform_apply(locati
 height=max(v.co.z for v in mesh.data.vertices)-min(v.co.z for v in mesh.data.vertices)
 mod=mesh.modifiers.new('Game mesh','DECIMATE');mod.ratio=min(1,90000/len(mesh.data.polygons));bpy.ops.object.modifier_apply(modifier=mod.name)
 bpy.ops.wm.save_as_mainfile(filepath=str(O/'Shirt-GameSource.blend'))
+exec(compile((R/'scripts/correct-shirt-hands.py').read_text(),str(R/'scripts/correct-shirt-hands.py'),'exec'))
 source=R/'art/prisoner-character/Galeotto-Pulito.blend'
 with bpy.data.libraries.load(str(source),link=False) as (a,b):b.objects=['Prisoner']
 rig=b.objects[0];bpy.context.collection.objects.link(rig);rig.name='ShirtHero'
@@ -38,8 +39,11 @@ def neutral(p,name):
  p=p.copy()
  if name.startswith(('Arm','Forearm')):
   s=name[-1];p=shoulders[s]+armrots[s]@(p-shoulders[s])
+  p.z-=.035
  elif name.startswith(('Leg','Shin','Foot')):
   s=name[-1];p=hips[s]+legrots[s]@(p-hips[s])
+ elif name=='Torso':
+  p.z-=.035*smooth(.075,.145,abs(p.x))*smooth(.66,.75,p.z)*(1-smooth(.85,.91,p.z))
  return p*scale
 for bone in rig.data.bones:mesh.vertex_groups.new(name=bone.name)
 import numpy as np
@@ -70,7 +74,7 @@ for n,p in pivots.items():
  bone=rig.data.edit_bones[n];bone.head=fitted(neutral(Vector(p),n));bone.tail=bone.head+Vector((0,.08,0))
 for s,sign in [('L',-1),('R',1)]:
  bone=rig.data.edit_bones.new('Hand'+s);bone.parent=rig.data.edit_bones['Forearm'+s]
- bone.head=fitted(neutral(Vector((sign*.49,-.016,.778)),'Forearm'+s));bone.tail=bone.head+Vector((0,.03,0))
+ bone.head=fitted(neutral(Vector((sign*.4875,0,.785)),'Forearm'+s));bone.tail=bone.head+Vector((0,.03,0))
 bpy.ops.object.mode_set(mode='OBJECT');rig.data.pose_position='POSE';mesh.parent=rig
 mod=mesh.modifiers.new('Guy skeleton','ARMATURE');mod.object=rig
 for mat in mesh.data.materials:

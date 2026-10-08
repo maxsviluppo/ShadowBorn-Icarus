@@ -4,9 +4,11 @@ export const CHARACTER_TEXTURE_GRADE=`
 #include <map_fragment>
 #ifdef USE_MAP
  float clothLuma=dot(diffuseColor.rgb,vec3(0.2126,0.7152,0.0722));
- vec3 cellPigment=mix(vec3(clothLuma),diffuseColor.rgb,0.94);
- cellPigment*=vec3(1.08,1.015,0.84);
- cellPigment+=vec3(0.014,0.007,0.003)*(1.0-clothLuma);
- diffuseColor.rgb=min(cellPigment,vec3(0.88,0.82,0.70));
+ vec3 cellPigment=max(mix(vec3(clothLuma),diffuseColor.rgb,1.06),vec3(0.0));
+ // Open the painted shadows and keep the reference's ivory shirt, brown leather
+ // and warm skin readable at the room's small pixel resolution.
+ cellPigment=pow(cellPigment,vec3(0.88))*vec3(1.04,1.0,0.93);
+ cellPigment+=vec3(0.010,0.006,0.003)*(1.0-clothLuma);
+ diffuseColor.rgb=min(cellPigment,vec3(0.92,0.88,0.79));
 #endif
 `;

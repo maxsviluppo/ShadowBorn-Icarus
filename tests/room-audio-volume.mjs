@@ -9,4 +9,9 @@ store.set('shadowborn-music-volume','invalid');assert.equal(new RoomAudio().getM
 let starts=0,stops=0;const gain={gain:{setValueAtTime(){},linearRampToValueAtTime(){},cancelScheduledValues(){},setTargetAtTime(){}},connect(){},disconnect(){}};
 audio.ctx={state:'running',currentTime:2,createGain:()=>gain,createBufferSource:()=>({connect(){},disconnect(){},start(){starts++;},stop(){stops++;}})};audio.master=gain;audio.buffers.set('skull-rattle',{duration:3});
 audio.skullRattle();assert.equal(starts,1);assert.equal(stops,1);assert.equal(audio.last,'skull-rattle');audio.enabled=false;audio.skullRattle();assert.equal(starts,1,'mute prevents rattle');
+let musicStarts=0;audio.music={paused:true,play(){musicStarts++;this.paused=false;return Promise.resolve();}};
+let resume;audio.ctx.state='suspended';audio.ctx.resume=()=>new Promise(resolve=>{resume=resolve;});
+const unlocking=audio.unlock();assert.equal(musicStarts,1,'music starts in the gesture before waiting for AudioContext');resume();await unlocking;
+audio.music.play=()=>Promise.reject(new Error('autoplay blocked'));assert.equal(await audio.startMusic(),false,'blocked autoplay requests an explicit start');
+audio.musicEnabled=false;assert.equal(await audio.startMusic(),true,'intentional music-off does not block intro');
 console.log('PASS: default 2%, live volume, persistence, silence and bounded skull sound.');

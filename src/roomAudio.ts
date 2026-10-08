@@ -11,9 +11,14 @@ export class RoomAudio{
   private music:HTMLAudioElement|null=null;private buffers=new Map<string,AudioBuffer>();
   private active=new Map<string,{source:AudioBufferSourceNode;gain:GainNode}>();
   private loading:Promise<void>|null=null;
+  async startMusic(){
+    if(!this.musicEnabled)return true;
+    if(!this.music){this.music=new Audio('/assets/audio/game-background.mp3');this.music.loop=true;this.music.volume=this.musicVolume;}
+    try{await this.music.play();return true;}catch{return false;}
+  }
   async unlock(){try{
+    void this.startMusic();
     if(!this.ctx){this.ctx=new AudioContext({latencyHint:'interactive'});this.master=this.ctx.createGain();this.master.gain.value=this.enabled?.65*this.effectsVolume:0;this.master.connect(this.ctx.destination);
-      this.music=new Audio('/assets/audio/game-background.mp3');this.music.loop=true;this.music.volume=this.musicVolume;
       this.loading=Promise.all([...['book','chest','cabinet','door'].flatMap(k=>['open','close'].map(a=>k+'-'+a)),'lock-open','bottle-broken','mouse-squeak','skull-rattle'].map(async id=>{const r=await fetch('/assets/audio/'+id+(['bottle-broken','skull-rattle'].includes(id)?'.mp3':'.wav'));if(!r.ok)throw Error(id);this.buffers.set(id,await this.ctx!.decodeAudioData(await r.arrayBuffer()));})).then(()=>{this.ready=true;}).catch(()=>{this.ready=false;});
     }
     if(this.ctx.state==='suspended')await this.ctx.resume();

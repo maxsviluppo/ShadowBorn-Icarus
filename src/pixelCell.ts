@@ -1,4 +1,4 @@
-import {wakeFrame,WAKE_START} from './wakeIntro';
+import {wakeFrame,WAKE_START,WAKE_DURATION} from './wakeIntro';
 import {IdleGestures} from './idleGestures';
 import {skullMotion} from './skullMotion';
 import {CHARACTER_TEXTURE_GRADE} from './characterPalette';
@@ -30,7 +30,7 @@ export async function startPixelCell(){
  const background=new Image();background.src='/assets/pixel/cell-transparent.png';
  const revealedBackground=new Image();revealedBackground.src='/assets/pixel/cell-secret-door.png';
  const layers=(await loadCellLayers()).filter(l=>!l.id.startsWith('cabinet'));const puzzle=new CellPuzzle(),puzzleArt=await loadPuzzleArt();
- const [file]=await Promise.all([new GLTFLoader().loadAsync('/assets/3d/shirt-hero.glb?v=0.16.0'),background.decode(),revealedBackground.decode()]);
+ const [file]=await Promise.all([new GLTFLoader().loadAsync('/assets/3d/shirt-hero.glb?v=0.16.1'),background.decode(),revealedBackground.decode()]);
  const backdrop=document.createElement('canvas');backdrop.width=1024;backdrop.height=559;const bg=backdrop.getContext('2d')!;bg.imageSmoothingEnabled=false;bg.drawImage(background,0,0,1024,559);
  const frame=document.createElement('div');Object.assign(frame.style,{position:'absolute',left:'50%',top:'50%',transform:'translate(-50%,-50%)'});
  const canvas=document.createElement('canvas');canvas.width=780;canvas.height=559;canvas.setAttribute('aria-label','Cella pixel art: clicca sul pavimento per camminare');Object.assign(canvas.style,{width:'100%',height:'100%',display:'block',imageRendering:'pixelated',touchAction:'none'});frame.append(canvas);host.append(frame);const ctx=canvas.getContext('2d')!;
@@ -56,7 +56,7 @@ export async function startPixelCell(){
  vec2 cell=mod(floor(gl_FragCoord.xy),2.0);
  float threshold=(cell.x==0.0?(cell.y==0.0?0.0:3.0):(cell.y==0.0?2.0:1.0))/4.0-0.375;
  vec3 levels=vec3(31.0,63.0,31.0);
- gl_FragColor.rgb=floor(clamp(gl_FragColor.rgb+threshold/levels,0.0,1.0)*levels+0.5)/levels;`);};m.customProgramCacheKey=()=>'guy-cell-pigment-rgb565-v1';if(m.map){m.map.minFilter=THREE.LinearMipmapLinearFilter;m.map.magFilter=THREE.NearestFilter;m.map.generateMipmaps=true;m.map.needsUpdate=true;}}}});
+ gl_FragColor.rgb=floor(clamp(gl_FragColor.rgb+threshold/levels,0.0,1.0)*levels+0.5)/levels;`);};m.customProgramCacheKey=()=>'shirt-reference-pigment-rgb565-v2';if(m.map){m.map.minFilter=THREE.LinearMipmapLinearFilter;m.map.magFilter=THREE.NearestFilter;m.map.generateMipmaps=true;m.map.needsUpdate=true;}}}});
  const camera=new THREE.OrthographicCamera(-.9,.9,1.05,-1.05,.1,30);camera.position.set(6,5.7,6);camera.lookAt(0,.8,0);camera.updateMatrixWorld();const anchor=new THREE.Vector3(0,0,0).project(camera);
  const mixer=new THREE.AnimationMixer(hero);const actions=['Idle','Walk','Run'].map(name=>{const clip=THREE.AnimationClip.findByName(file.animations,name);if(!clip)throw new Error('Missing animation '+name);const a=mixer.clipAction(clip);a.play();a.paused=true;return a;});
  const motion=new Locomotion3D(CELL_METRES);motion.location={...WAKE_START};const footsteps=new Footsteps(),audio=new RoomAudio();let objectRun=false;let pending:CellObject|null=null,mode:'interact'|'examine'='interact',phase=0,blend=0,runBlend=0,elapsed=0,last=performance.now(),debug=false,lastTap={time:-1000,x:0,y:0};const seen=new Set<string>();let pendingVerb:Verb='interact',pendingItem:Item|undefined;
@@ -70,7 +70,7 @@ export async function startPixelCell(){
  document.addEventListener('keydown',()=>idleGestures.interrupt(),{capture:true});
  const introControls=[$('bag-toggle'),$('settings-toggle'),$('inventory-tray')];
  function lockIntro(locked:boolean){frame.inert=locked;introControls.forEach(e=>e.inert=locked);host.dataset.intro=locked?'active':'complete';hint.hidden=true;}
- window.addEventListener('keydown',e=>{if(!introFinished&&['i','Enter',' ','Escape'].includes(e.key)){e.preventDefault();e.stopImmediatePropagation();}},true);
+ window.addEventListener('keydown',e=>{if(!introFinished&&(e.target as HTMLElement)?.id!=='start-adventure'&&['i','Enter',' ','Escape'].includes(e.key)){e.preventDefault();e.stopImmediatePropagation();}},true);
  let revealing:{time:number;swapped:boolean}|null=null;
  let knocking:{time:number;hits:number}|null=null;
  let throwing:{time:number;start:{x:number;y:number}|null;impact:boolean}|null=null;
@@ -193,7 +193,8 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
   host.dataset.action=revealing?'reveal':knocking?'knock':interaction?interaction.kind:throwing?(throwing.time<THROW_RELEASE?'windup':throwing.time<THROW_IMPACT?'bottle-flight':'glass-falling'):'';
   host.dataset.actionTime=interaction?.time.toFixed(2)??'';
   const wake=wakeFrame(introTime);
-  const skullMoving=skullMotion(elapsed).active;
+  const skullTime=wake.active?-1:Math.max(0,introTime-WAKE_DURATION);
+  const skullMoving=skullMotion(skullTime).active;
   if(skullMoving&&!skullWasMoving)audio.skullRattle();
   skullWasMoving=skullMoving;
   const idle=idleGestures.step(dt,introFinished&&motion.arrived&&!pending&&!turning&&!interaction&&!throwing&&!knocking&&!revealing&&!skullDialogue.active&&!document.querySelector('dialog[open]'));
@@ -215,7 +216,7 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
   renderer.render(scene,camera);
   body.position.copy(bodyBase);poseBones.forEach((b,i)=>b.quaternion.copy(boneBases[i]));
   arm.quaternion.copy(armBase);forearm.quaternion.copy(forearmBase);torso.quaternion.copy(torsoBase);head.quaternion.copy(headBase);
-  ctx.clearRect(0,0,780,559);ctx.save();ctx.translate(-120,0);ctx.imageSmoothingEnabled=false;ctx.drawImage(backdrop,0,0);for(const q of [[423,365,89,19],[577,335,43,12],[671,359,39,12]])shadow(q[0],q[1],q[2],q[3],.24);const visibleLayers=layers.filter(l=>l.id!=='mouse');for(const l of visibleLayers)drawCellLayer(ctx,l);drawMouse();puzzleArt.draw(ctx,puzzle);puzzleArt.drawSkull(ctx,puzzle,elapsed);puzzleArt.drawFragments(ctx,puzzle);
+  ctx.clearRect(0,0,780,559);ctx.save();ctx.translate(-120,0);ctx.imageSmoothingEnabled=false;ctx.drawImage(backdrop,0,0);for(const q of [[423,365,89,19],[577,335,43,12],[671,359,39,12]])shadow(q[0],q[1],q[2],q[3],.24);const visibleLayers=layers.filter(l=>l.id!=='mouse');for(const l of visibleLayers)drawCellLayer(ctx,l);drawMouse();puzzleArt.draw(ctx,puzzle);puzzleArt.drawSkull(ctx,puzzle,skullTime);puzzleArt.drawFragments(ctx,puzzle);
   const p=projectCell(motion.location),height=219.3975,width=height*192/224;
   let introX=0,introY=0;
   if(wake.active){
@@ -224,7 +225,7 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
    introX=(bedX-normalX)*(1-wake.stand);introY=(bedY-normalY)*(1-wake.stand);
    shadow(bedX,bedY+12,42,7,.25*(1-wake.stand));
   }
-  shadow(p.x,p.y+1,19,7,.44*(wake.active?wake.stand:1));
+  shadow(p.x,p.y+1,28.5,10.5,.44*(wake.active?wake.stand:1));
   ctx.drawImage(renderer.domElement,p.x+introX-6*seatWeight-(anchor.x+1)/2*width,p.y+introY-40*seatWeight-(1-anchor.y)/2*height,width,height);
   if(cellLayerOccludes('cabinet',.52,motion.location))puzzleArt.draw(ctx,puzzle);
   for(const l of visibleLayers)if(!(l.id==='bed'&&(seatWeight>0||wake.active))&&cellLayerOccludes(l.id,l.depth,motion.location))drawCellLayer(ctx,l);
@@ -237,7 +238,16 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
   Object.assign(host.dataset,{motion:motion.state,walkable:String(walkable(motion.location)),u:motion.location.u.toFixed(5),v:motion.location.v.toFixed(5),pending:pending?.id??'',speed:motion.speed.toFixed(3)});
   document.getElementById('boot-cover')?.remove();
  }
- loading.remove();Object.assign(host.dataset,{ready:'true',room:'0.16.0',character:'ShirtHero',background:'layered-2d'});requestAnimationFrame(tick);
+ loading.remove();Object.assign(host.dataset,{ready:'true',room:'0.16.0',character:'ShirtHero',background:'layered-2d'});const begin=()=>{void audio.unlock();last=performance.now();requestAnimationFrame(tick);};
+ if(await audio.startMusic())begin();
+ else{
+  const cover=document.getElementById('boot-cover')!;
+  cover.setAttribute('aria-label','Inizia una nuova avventura');
+  Object.assign(cover.style,{display:'grid',placeItems:'center'});
+  const start=document.createElement('button');start.id='start-adventure';start.textContent='Inizia l’avventura';
+  Object.assign(start.style,{fontFamily:'inherit',fontSize:'20px',color:'#f3dfb0',background:'#251c16',border:'1px solid #8b704a',padding:'16px 24px',cursor:'pointer'});
+  cover.append(start);start.focus();start.onclick=()=>{start.remove();begin();};
+ }
 }
 
 

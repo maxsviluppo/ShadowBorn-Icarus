@@ -19,10 +19,13 @@ strappate corte e viene rispettato anche dove il video mostra maniche lunghe.
 
 `public/assets/3d/shirt-hero.glb`, 90.000 triangoli, texture incorporata a
 risoluzione originale, scala uniforme a 1,60 m. Dimensione su canvas invariata
-(219,3975 px). Nessuna scala separata di testa, mani o spalle.
+(219,3975 px). Altezza complessiva invariata. Nell'ultima revisione richiesta,
+le mani sono scambiate, orientate con i pollici in avanti e scalate al 70%;
+le spalle e le braccia scendono di 0,035 unità sorgente, circa 5 cm in gioco.
 
 `scripts/inspect-shirt-model.py` importa la sorgente e rende fronte/retro/profilo.
 `scripts/build-shirt.py` adatta posa a T, pesi, articolazioni e texture;
+`scripts/correct-shirt-hands.py` conserva le UV delle mani e ricongiunge i polsi;
 `scripts/animate-shirt.py` costruisce Idle, Walk e Run in loop, con appoggio
 dei piedi risolto sulle lunghezze effettive delle nuove gambe.
 I punti HandL/HandR permettono di ancorare gli oggetti alle nuove mani.

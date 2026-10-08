@@ -1,9 +1,11 @@
-// One third fewer rattles: average interval 4.5 seconds, unchanged burst speed.
+// One brief rattle roughly every 140 seconds of play, with small random pauses.
 export function skullMotion(time:number){
- const block=Math.floor(time/9),local=time-block*9;
- const random=Math.sin((block+1)*12.9898)*43758.5453;
- const offset=.3+(random-Math.floor(random))*.9;
- const pulse=local-offset-(local>=offset+4.5?4.5:0);
+ let pulse=-1;
+ for(let cycle=Math.max(1,Math.floor(time/140));cycle<=Math.floor(time/140)+1;cycle++){
+  const random=Math.sin((cycle+1)*12.9898)*43758.5453;
+  const start=cycle*140-10+(random-Math.floor(random))*20;
+  if(time>=start&&time<start+.85){pulse=time-start;break;}
+ }
  const duration=.85,active=pulse>=0&&pulse<duration;
  if(!active)return {active:false,x:0,y:0,angle:0};
  const envelope=active?Math.sin(Math.PI*pulse/duration)**2:0;
