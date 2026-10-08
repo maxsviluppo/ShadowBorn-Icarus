@@ -2,7 +2,7 @@ import type {PropKind} from './propMotion';
 /** Shared material sound library; every instance uses the same family of samples. */
 export class RoomAudio{
   enabled=true;musicEnabled=true;private effectsVolume=1;private musicVolume=.02;
-  constructor(){try{const saved=Number(localStorage.getItem('shadowborn-music-volume'));if(Number.isFinite(saved))this.musicVolume=Math.max(0,Math.min(1,saved));}catch{}}
+  constructor(){try{const raw=localStorage.getItem('shadowborn-music-volume');if(raw!==null&&raw.trim()!==''){const saved=Number(raw);if(Number.isFinite(saved))this.musicVolume=Math.max(0,Math.min(1,saved));}}catch{}}
   setEffectsVolume(v:number){this.effectsVolume=Math.max(0,Math.min(1,v));if(this.master&&this.ctx)this.master.gain.setTargetAtTime(this.enabled?.65*this.effectsVolume:0,this.ctx.currentTime,.02);}
   setMusicVolume(v:number){this.musicVolume=Math.max(0,Math.min(1,v));if(this.music)this.music.volume=this.musicVolume;try{localStorage.setItem('shadowborn-music-volume',String(this.musicVolume));}catch{}}
   getMusicVolume(){return this.musicVolume;}
@@ -14,7 +14,7 @@ export class RoomAudio{
   async unlock(){try{
     if(!this.ctx){this.ctx=new AudioContext({latencyHint:'interactive'});this.master=this.ctx.createGain();this.master.gain.value=this.enabled?.65*this.effectsVolume:0;this.master.connect(this.ctx.destination);
       this.music=new Audio('/assets/audio/game-background.mp3');this.music.loop=true;this.music.volume=this.musicVolume;
-      this.loading=Promise.all([...['book','chest','cabinet','door'].flatMap(k=>['open','close'].map(a=>k+'-'+a)),'lock-open','bottle-broken','mouse-squeak'].map(async id=>{const r=await fetch('/assets/audio/'+id+(id==='bottle-broken'?'.mp3':'.wav'));if(!r.ok)throw Error(id);this.buffers.set(id,await this.ctx!.decodeAudioData(await r.arrayBuffer()));})).then(()=>{this.ready=true;}).catch(()=>{this.ready=false;});
+      this.loading=Promise.all([...['book','chest','cabinet','door'].flatMap(k=>['open','close'].map(a=>k+'-'+a)),'lock-open','bottle-broken','mouse-squeak','skull-rattle'].map(async id=>{const r=await fetch('/assets/audio/'+id+(['bottle-broken','skull-rattle'].includes(id)?'.mp3':'.wav'));if(!r.ok)throw Error(id);this.buffers.set(id,await this.ctx!.decodeAudioData(await r.arrayBuffer()));})).then(()=>{this.ready=true;}).catch(()=>{this.ready=false;});
     }
     if(this.ctx.state==='suspended')await this.ctx.resume();
     if(this.musicEnabled&&this.music?.paused)void this.music.play().catch(()=>{});
@@ -43,6 +43,16 @@ export class RoomAudio{
   click(){
     if(!this.enabled||this.ctx?.state!=='running'||!this.master)return;
     const now=this.ctx.currentTime,osc=this.ctx.createOscillator(),gain=this.ctx.createGain();osc.type='triangle';osc.frequency.setValueAtTime(1700,now);osc.frequency.exponentialRampToValueAtTime(320,now+.055);gain.gain.setValueAtTime(.3,now);gain.gain.exponentialRampToValueAtTime(.0001,now+.075);osc.connect(gain);gain.connect(this.master);osc.onended=()=>{osc.disconnect();gain.disconnect();};osc.start(now);osc.stop(now+.08);
+  }
+  skullRattle(duration=.85){
+    if(!this.enabled||this.ctx?.state!=='running'||!this.master)return;
+    const buffer=this.buffers.get('skull-rattle');if(!buffer)return;
+    this.stop('skull');const source=this.ctx.createBufferSource(),gain=this.ctx.createGain();source.buffer=buffer;
+    const now=this.ctx.currentTime,offset=.10,length=Math.min(duration,buffer.duration-offset);
+    gain.gain.setValueAtTime(0,now);gain.gain.linearRampToValueAtTime(.38,now+.025);gain.gain.setValueAtTime(.38,now+Math.max(.025,length-.08));gain.gain.linearRampToValueAtTime(0,now+length);
+    source.connect(gain);gain.connect(this.master);this.active.set('skull',{source,gain});
+    source.onended=()=>{source.disconnect();gain.disconnect();if(this.active.get('skull')?.source===source)this.active.delete('skull');};
+    source.start(now,offset);source.stop(now+length);this.played++;this.last='skull-rattle';
   }
   setEnabled(on:boolean){this.enabled=on;if(this.master&&this.ctx)this.master.gain.setTargetAtTime(on?.65*this.effectsVolume:0,this.ctx.currentTime,.02);if(!on){this.stopAll();}else void this.unlock();}
   toggleMusic(){this.musicEnabled=!this.musicEnabled;if(!this.musicEnabled)this.music?.pause();else void this.unlock();return this.musicEnabled;}

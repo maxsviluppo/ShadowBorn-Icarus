@@ -1,6 +1,6 @@
 // Offline composition for checking the Blender poses against the game's bed placement.
 import sharp from 'sharp';import * as THREE from 'three';
-const out='art/prisoner-character';
+const out='art/guy-character';
 const mask=await sharp('public/assets/pixel/puzzle/bed-canva-alpha.png').resize(1024,559).png().toBuffer();
 const bed=await sharp('public/assets/pixel/elements/Gemini_Generated_Image_gz3m2dgz3m2dgz3m.jpg').resize(1024,559).ensureAlpha().composite([{input:mask,blend:'dest-in'}]).png().toBuffer();
 const placedBed=await sharp(bed).resize(481,263,{kernel:'nearest'}).png().toBuffer();

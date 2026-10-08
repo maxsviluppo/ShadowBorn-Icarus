@@ -1,4 +1,7 @@
 import {wakeFrame,WAKE_START} from './wakeIntro';
+import {IdleGestures} from './idleGestures';
+import {skullMotion} from './skullMotion';
+import {CHARACTER_TEXTURE_GRADE} from './characterPalette';
 import {CellMouse} from './cellMouse';
 import {revealFrame,KNOCK_TIMES,KNOCK_DURATION,knockPose} from './secretPassage';
 import {createSkullDialogue} from './skullDialogueUI';
@@ -27,7 +30,7 @@ export async function startPixelCell(){
  const background=new Image();background.src='/assets/pixel/cell-transparent.png';
  const revealedBackground=new Image();revealedBackground.src='/assets/pixel/cell-secret-door.png';
  const layers=(await loadCellLayers()).filter(l=>!l.id.startsWith('cabinet'));const puzzle=new CellPuzzle(),puzzleArt=await loadPuzzleArt();
- const [file]=await Promise.all([new GLTFLoader().loadAsync('/assets/3d/prisoner.glb?v=0.14.1'),background.decode(),revealedBackground.decode()]);
+ const [file]=await Promise.all([new GLTFLoader().loadAsync('/assets/3d/guy.glb?v=0.15.0'),background.decode(),revealedBackground.decode()]);
  const backdrop=document.createElement('canvas');backdrop.width=1024;backdrop.height=559;const bg=backdrop.getContext('2d')!;bg.imageSmoothingEnabled=false;bg.drawImage(background,0,0,1024,559);
  const frame=document.createElement('div');Object.assign(frame.style,{position:'absolute',left:'50%',top:'50%',transform:'translate(-50%,-50%)'});
  const canvas=document.createElement('canvas');canvas.width=780;canvas.height=559;canvas.setAttribute('aria-label','Cella pixel art: clicca sul pavimento per camminare');Object.assign(canvas.style,{width:'100%',height:'100%',display:'block',imageRendering:'pixelated',touchAction:'none'});frame.append(canvas);host.append(frame);const ctx=canvas.getContext('2d')!;
@@ -48,12 +51,12 @@ export async function startPixelCell(){
  const renderer=new THREE.WebGLRenderer({alpha:true,antialias:false,powerPreference:'low-power',preserveDrawingBuffer:true});renderer.setSize(192,224);renderer.setPixelRatio(1);renderer.setClearColor(0,0);renderer.outputColorSpace=THREE.SRGBColorSpace;
  const scene=new THREE.Scene(),hero=file.scene;scene.add(hero);scene.add(new THREE.HemisphereLight(0xfff6e8,0x69635a,2));const light=new THREE.DirectionalLight(0xffefda,1.6);light.position.set(-3,6,4);scene.add(light);
  hero.traverse(o=>{if(o instanceof THREE.Mesh){o.castShadow=false;o.receiveShadow=false;for(const m of Array.isArray(o.material)?o.material:[o.material])if(m instanceof THREE.MeshStandardMaterial){m.metalness=0;m.roughness=1;
- m.onBeforeCompile=shader=>{shader.fragmentShader=shader.fragmentShader.replace('#include <dithering_fragment>',`#include <dithering_fragment>
+ m.onBeforeCompile=shader=>{shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',CHARACTER_TEXTURE_GRADE).replace('#include <dithering_fragment>',`#include <dithering_fragment>
  // RGB565 output with a subtle fixed pixel dither; texture colours remain the source.
  vec2 cell=mod(floor(gl_FragCoord.xy),2.0);
  float threshold=(cell.x==0.0?(cell.y==0.0?0.0:3.0):(cell.y==0.0?2.0:1.0))/4.0-0.375;
  vec3 levels=vec3(31.0,63.0,31.0);
- gl_FragColor.rgb=floor(clamp(gl_FragColor.rgb+threshold/levels,0.0,1.0)*levels+0.5)/levels;`);};m.customProgramCacheKey=()=>'barnaby-rgb565';if(m.map){m.map.minFilter=THREE.LinearMipmapLinearFilter;m.map.magFilter=THREE.NearestFilter;m.map.generateMipmaps=true;m.map.needsUpdate=true;}}}});
+ gl_FragColor.rgb=floor(clamp(gl_FragColor.rgb+threshold/levels,0.0,1.0)*levels+0.5)/levels;`);};m.customProgramCacheKey=()=>'guy-cell-pigment-rgb565-v1';if(m.map){m.map.minFilter=THREE.LinearMipmapLinearFilter;m.map.magFilter=THREE.NearestFilter;m.map.generateMipmaps=true;m.map.needsUpdate=true;}}}});
  const camera=new THREE.OrthographicCamera(-.9,.9,1.05,-1.05,.1,30);camera.position.set(6,5.7,6);camera.lookAt(0,.8,0);camera.updateMatrixWorld();const anchor=new THREE.Vector3(0,0,0).project(camera);
  const mixer=new THREE.AnimationMixer(hero);const actions=['Idle','Walk','Run'].map(name=>{const clip=THREE.AnimationClip.findByName(file.animations,name);if(!clip)throw new Error('Missing animation '+name);const a=mixer.clipAction(clip);a.play();a.paused=true;return a;});
  const motion=new Locomotion3D(CELL_METRES);motion.location={...WAKE_START};const footsteps=new Footsteps(),audio=new RoomAudio();let objectRun=false;let pending:CellObject|null=null,mode:'interact'|'examine'='interact',phase=0,blend=0,runBlend=0,elapsed=0,last=performance.now(),debug=false,lastTap={time:-1000,x:0,y:0};const seen=new Set<string>();let pendingVerb:Verb='interact',pendingItem:Item|undefined;
@@ -61,6 +64,10 @@ export async function startPixelCell(){
  const revealOverlay=document.createElement('div');revealOverlay.id='room-reveal';revealOverlay.hidden=true;revealOverlay.textContent='Dopo 10 minuti...';document.body.append(revealOverlay);
  const introOverlay=document.createElement('div');introOverlay.id='wake-intro';introOverlay.style.opacity='1';document.body.append(introOverlay);let introTime=0,introFinished=false;
  const head=hero.getObjectByName('Head')!;
+ const idleGestures=new IdleGestures();
+ let skullWasMoving=false;
+ document.addEventListener('pointerdown',()=>idleGestures.interrupt(),{capture:true});
+ document.addEventListener('keydown',()=>idleGestures.interrupt(),{capture:true});
  const introControls=[$('bag-toggle'),$('settings-toggle'),$('inventory-tray')];
  function lockIntro(locked:boolean){frame.inert=locked;introControls.forEach(e=>e.inert=locked);host.dataset.intro=locked?'active':'complete';hint.hidden=true;}
  window.addEventListener('keydown',e=>{if(!introFinished&&['i','Enter',' ','Escape'].includes(e.key)){e.preventDefault();e.stopImmediatePropagation();}},true);
@@ -183,6 +190,12 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
   host.dataset.action=revealing?'reveal':knocking?'knock':interaction?interaction.kind:throwing?(throwing.time<THROW_RELEASE?'windup':throwing.time<THROW_IMPACT?'bottle-flight':'glass-falling'):'';
   host.dataset.actionTime=interaction?.time.toFixed(2)??'';
   const wake=wakeFrame(introTime);
+  const skullMoving=skullMotion(elapsed).active;
+  if(skullMoving&&!skullWasMoving)audio.skullRattle();
+  skullWasMoving=skullMoving;
+  const idle=idleGestures.step(dt,introFinished&&motion.arrived&&!pending&&!turning&&!interaction&&!throwing&&!knocking&&!revealing&&!skullDialogue.active&&!document.querySelector('dialog[open]'));
+  host.dataset.idleGesture=idle?.kind??'';
+  if(idle){head.rotateX(idle.head);arm.rotateZ(idle.armRZ);arm.rotateX(idle.armR);forearm.rotateX(idle.forearmR);forearm.rotateZ(idle.forearmRZ);poseBones[6].rotateZ(idle.armLZ);poseBones[6].rotateX(idle.armL);poseBones[7].rotateX(idle.forearmL);}
   hero.rotation.x=0;hero.rotation.z=0;hero.position.set(0,0,0);
   if(wake.active){
    host.dataset.introStage=wake.stage;introOverlay.style.opacity=String(wake.black);introOverlay.hidden=wake.black===0;
@@ -221,7 +234,7 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
   Object.assign(host.dataset,{motion:motion.state,walkable:String(walkable(motion.location)),u:motion.location.u.toFixed(5),v:motion.location.v.toFixed(5),pending:pending?.id??'',speed:motion.speed.toFixed(3)});
   document.getElementById('boot-cover')?.remove();
  }
- loading.remove();Object.assign(host.dataset,{ready:'true',room:'0.13.0',character:'Galeotto',background:'layered-2d'});requestAnimationFrame(tick);
+ loading.remove();Object.assign(host.dataset,{ready:'true',room:'0.15.0',character:'Guy',background:'layered-2d'});requestAnimationFrame(tick);
 }
 
 

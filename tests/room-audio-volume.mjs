@@ -1,0 +1,12 @@
+import fs from 'node:fs';import assert from 'node:assert/strict';import ts from 'typescript';
+const code=ts.transpileModule(fs.readFileSync('src/roomAudio.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.ES2022,target:ts.ScriptTarget.ES2022}}).outputText;
+const {RoomAudio}=await import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));
+const store=new Map();globalThis.localStorage={getItem:k=>store.get(k)??null,setItem:(k,v)=>store.set(k,v)};
+let audio=new RoomAudio();assert.equal(audio.getMusicVolume(),.02,'new player default 2%');
+const player={volume:0};audio.music=player;audio.setMusicVolume(.13);assert.equal(player.volume,.13,'slider controls actual media');
+assert.equal(new RoomAudio().getMusicVolume(),.13,'restore explicit choice');audio.setMusicVolume(0);assert.equal(new RoomAudio().getMusicVolume(),0,'preserve intentional silence');
+store.set('shadowborn-music-volume','invalid');assert.equal(new RoomAudio().getMusicVolume(),.02);
+let starts=0,stops=0;const gain={gain:{setValueAtTime(){},linearRampToValueAtTime(){},cancelScheduledValues(){},setTargetAtTime(){}},connect(){},disconnect(){}};
+audio.ctx={state:'running',currentTime:2,createGain:()=>gain,createBufferSource:()=>({connect(){},disconnect(){},start(){starts++;},stop(){stops++;}})};audio.master=gain;audio.buffers.set('skull-rattle',{duration:3});
+audio.skullRattle();assert.equal(starts,1);assert.equal(stops,1);assert.equal(audio.last,'skull-rattle');audio.enabled=false;audio.skullRattle();assert.equal(starts,1,'mute prevents rattle');
+console.log('PASS: default 2%, live volume, persistence, silence and bounded skull sound.');
