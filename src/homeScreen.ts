@@ -13,7 +13,7 @@ export function startHomeScreen(prepare:(audio:RoomAudio)=>Promise<PreparedGame>
  const shell=document.querySelector<HTMLElement>('.game-shell')!;shell.inert=true;
  const audio=new RoomAudio(),theme=new Audio('/assets/audio/home-theme.mp3');
  theme.loop=true;theme.preload='auto';theme.volume=.20;
- let context:AudioContext|undefined,gain:GainNode|undefined,starting=false,muted=false,disposed=false;
+ let context:AudioContext|undefined,gain:GainNode|undefined,starting=false,muted=true,disposed=false;
  const updateSound=()=>{sound.textContent=muted?'♫':'♪';sound.setAttribute('aria-label',muted?'Attiva la sigla':'Disattiva la sigla');sound.setAttribute('aria-pressed',String(!muted));};
  const playTheme=()=>{
   if(muted||disposed)return;
@@ -32,8 +32,7 @@ export function startHomeScreen(prepare:(audio:RoomAudio)=>Promise<PreparedGame>
  home.addEventListener('keydown',homeKey);
  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
  if(!reduced)void video.play().catch(()=>{});else video.pause();
- // Autoplay is optional. If blocked, the illustrated home remains fully usable.
- void theme.play().then(updateSound).catch(updateSound);
+ // Home is silent by default; only an explicit sound toggle enables its theme.
  let ending=false,holding=false;let endingTimer:ReturnType<typeof setTimeout>|undefined;
  let failure:unknown;
  const prepared=prepare(audio).catch(error=>{failure=error;return null;});
@@ -55,11 +54,11 @@ export function startHomeScreen(prepare:(audio:RoomAudio)=>Promise<PreparedGame>
  };
  skip.onclick=()=>{void finish();};
  presentation.ontimeupdate=()=>{const lift=Math.max(0,Math.min(1,(presentation.currentTime-8.8)/1.15));presentation.style.filter=`brightness(${1+lift*.85})`;};
- presentation.onended=()=>{if(ending||holding)return;holding=true;home.classList.add('expression-hold');presentation.style.filter='brightness(1.85)';endingTimer=setTimeout(()=>{void finish();},2000);};
+ presentation.onended=()=>{if(ending||holding)return;holding=true;home.classList.add('expression-hold');presentation.style.filter='brightness(1.85)';endingTimer=setTimeout(()=>{void finish();},5000);};
  presentation.onerror=()=>{if(starting)void finish();};
  start.onclick=(event)=>{
   if(starting)return;starting=true;start.disabled=true;start.setAttribute('aria-busy','true');
-  audio.prepareMusicTransition();playTheme();home.classList.add('presenting');skip.hidden=false;if(event?.detail===0)skip.focus({preventScroll:true});
+  audio.prepareMusicTransition();theme.pause();theme.src='/assets/audio/pirate-intro.mp3';theme.currentTime=0;theme.loop=false;muted=false;updateSound();playTheme();home.classList.add('presenting');skip.hidden=false;if(event?.detail===0)skip.focus({preventScroll:true});
   presentation.onplaying=()=>{home.classList.add('presentation-ready');};
   void presentation.play().catch(()=>{void finish();});
  };
