@@ -14,7 +14,7 @@ export function startHomeScreen(prepare:(audio:RoomAudio)=>Promise<PreparedGame>
  const audio=new RoomAudio(),theme=new Audio('/assets/audio/home-theme.mp3');
  theme.loop=true;theme.preload='auto';theme.volume=.20;
  let context:AudioContext|undefined,gain:GainNode|undefined,starting=false,muted=false,disposed=false;
- const updateSound=()=>{sound.textContent=theme.paused?'♫':'♪';sound.setAttribute('aria-label',theme.paused?'Attiva la sigla':'Disattiva la sigla');sound.setAttribute('aria-pressed',String(!theme.paused));};
+ const updateSound=()=>{sound.textContent=muted?'♫':'♪';sound.setAttribute('aria-label',muted?'Attiva la sigla':'Disattiva la sigla');sound.setAttribute('aria-pressed',String(!muted));};
  const playTheme=()=>{
   if(muted||disposed)return;
   // The GainNode also fades correctly on mobile browsers that ignore .volume.
@@ -24,11 +24,12 @@ export function startHomeScreen(prepare:(audio:RoomAudio)=>Promise<PreparedGame>
   }catch{/* HTML media remains usable when Web Audio is unavailable. */}
   void theme.play().then(updateSound).catch(updateSound);
  };
- sound.onclick=()=>{if(!theme.paused){muted=true;theme.pause();updateSound();}else{muted=false;playTheme();}};
+ sound.onclick=()=>{muted=!muted;if(muted)theme.pause();else playTheme();updateSound();};
+ updateSound();
  const firstTouch=(event:Event)=>{if(!(event.target instanceof Element)||!event.target.closest('#home-start,#home-sound'))playTheme();};
  home.addEventListener('pointerdown',firstTouch);
  const homeKey=(event:Event)=>{event.stopPropagation();firstTouch(event);};
- home.addEventListener('keydown',homeKey);start.focus({preventScroll:true});
+ home.addEventListener('keydown',homeKey);
  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
  if(!reduced)void video.play().catch(()=>{});else video.pause();
  // Autoplay is optional. If blocked, the illustrated home remains fully usable.
@@ -54,9 +55,9 @@ export function startHomeScreen(prepare:(audio:RoomAudio)=>Promise<PreparedGame>
  };
  skip.onclick=()=>{void finish();};presentation.onended=()=>{void finish();};
  presentation.onerror=()=>{if(starting)void finish();};
- start.onclick=()=>{
+ start.onclick=(event)=>{
   if(starting)return;starting=true;start.disabled=true;start.setAttribute('aria-busy','true');
-  audio.prepareMusicTransition();playTheme();home.classList.add('presenting');skip.hidden=false;skip.focus({preventScroll:true});
+  audio.prepareMusicTransition();playTheme();home.classList.add('presenting');skip.hidden=false;if(event?.detail===0)skip.focus({preventScroll:true});
   presentation.onplaying=()=>{home.classList.add('presentation-ready');};
   void presentation.play().catch(()=>{void finish();});
  };

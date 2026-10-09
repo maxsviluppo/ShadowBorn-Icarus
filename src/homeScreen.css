@@ -32,3 +32,7 @@ body.home-active .game-shell{visibility:hidden}
 .cinematic-skip{position:fixed;right:max(22px,env(safe-area-inset-right));bottom:max(22px,env(safe-area-inset-bottom));z-index:100002;padding:10px 24px;border:2px solid #79502a;border-radius:4px;background:linear-gradient(#f4d58d,#c89c54);box-shadow:0 3px 0 #382313;color:#382313;font:bold 18px Georgia,serif;cursor:pointer;text-shadow:0 1px #ffe5ad}
 .cinematic-skip:hover,.cinematic-skip:focus-visible{filter:brightness(1.15)}
 .cinematic-skip[hidden]{display:none}
+
+#home-start,#home-start:focus,#home-start:focus-visible,#home-start:active{outline:none!important;box-shadow:none!important;border:0;appearance:none;-webkit-appearance:none;user-select:none;-webkit-user-select:none}
+#home-start img{user-select:none;-webkit-user-select:none;-webkit-user-drag:none}
+.cinematic-skip:focus{outline:none}
