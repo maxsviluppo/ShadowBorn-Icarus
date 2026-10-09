@@ -36,3 +36,8 @@ body.home-active .game-shell{visibility:hidden}
 #home-start,#home-start:focus,#home-start:focus-visible,#home-start:active{outline:none!important;box-shadow:none!important;border:0;appearance:none;-webkit-appearance:none;user-select:none;-webkit-user-select:none}
 #home-start img{user-select:none;-webkit-user-select:none;-webkit-user-drag:none}
 .cinematic-skip:focus{outline:none}
+
+.cinematic-skip,.cinematic-skip:focus,.cinematic-skip:focus-visible,.cinematic-skip:active{outline:none!important;-webkit-tap-highlight-color:transparent}
+#home-presentation{transform-origin:44% 42%;transition:opacity 1.4s ease,transform 2s ease-out}
+#home-screen.expression-hold #home-presentation{transform:scale(1.12)}
+@media(prefers-reduced-motion:reduce){#home-screen.expression-hold #home-presentation{transform:none}}

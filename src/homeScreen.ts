@@ -34,13 +34,13 @@ export function startHomeScreen(prepare:(audio:RoomAudio)=>Promise<PreparedGame>
  if(!reduced)void video.play().catch(()=>{});else video.pause();
  // Autoplay is optional. If blocked, the illustrated home remains fully usable.
  void theme.play().then(updateSound).catch(updateSound);
- let ending=false;
+ let ending=false,holding=false;let endingTimer:ReturnType<typeof setTimeout>|undefined;
  let failure:unknown;
  const prepared=prepare(audio).catch(error=>{failure=error;return null;});
- const visibility=()=>{if(document.hidden){video.pause();presentation.pause();theme.pause();}else if(!disposed&&!ending){if(starting)void presentation.play().catch(()=>{});else if(!reduced)void video.play().catch(()=>{});if(!muted)playTheme();}};
+ const visibility=()=>{if(document.hidden){video.pause();presentation.pause();theme.pause();}else if(!disposed&&!ending){if(starting&&!holding)void presentation.play().catch(()=>{});else if(!reduced)void video.play().catch(()=>{});if(!muted)playTheme();}};
  document.addEventListener('visibilitychange',visibility);
  const finish=async()=>{
-  if(ending)return;ending=true;skip.hidden=true;
+  if(ending)return;ending=true;clearTimeout(endingTimer);skip.hidden=true;
   status.textContent='Preparazione dell’avventura…';
   const game=await prepared;
   if(!game){home.classList.remove('presenting');home.classList.remove('presentation-ready');presentation.pause();console.error(failure);audio.pause();status.textContent='La cella non si è caricata. Tocca di nuovo per riprovare.';start.disabled=false;start.removeAttribute('aria-busy');start.onclick=()=>location.reload();return;}
@@ -53,7 +53,9 @@ export function startHomeScreen(prepare:(audio:RoomAudio)=>Promise<PreparedGame>
   document.body.classList.remove('home-active');shell.inert=false;
   audio.fadeInMusic(1.4);game.start();home.remove();
  };
- skip.onclick=()=>{void finish();};presentation.onended=()=>{void finish();};
+ skip.onclick=()=>{void finish();};
+ presentation.ontimeupdate=()=>{const lift=Math.max(0,Math.min(1,(presentation.currentTime-8.8)/1.15));presentation.style.filter=`brightness(${1+lift*.85})`;};
+ presentation.onended=()=>{if(ending||holding)return;holding=true;home.classList.add('expression-hold');presentation.style.filter='brightness(1.85)';endingTimer=setTimeout(()=>{void finish();},2000);};
  presentation.onerror=()=>{if(starting)void finish();};
  start.onclick=(event)=>{
   if(starting)return;starting=true;start.disabled=true;start.setAttribute('aria-busy','true');
