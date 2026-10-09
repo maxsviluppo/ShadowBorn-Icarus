@@ -1,6 +1,10 @@
 import './style.css';
+import './homeScreen.css';
+import {startHomeScreen} from './homeScreen';
 import {initInterface} from './interface';
 initInterface();
+const mode=new URLSearchParams(location.search).get('mode');
+if(mode==='2d'||mode==='3d'){document.getElementById('home-screen')?.remove();document.body.classList.remove('home-active');}
 // Safari gesture events bypass touch-action on older iOS releases.
 for(const type of ['gesturestart','gesturechange','gestureend'])document.addEventListener(type,event=>event.preventDefault(),{passive:false});
 document.addEventListener('touchmove',event=>{if(event.touches.length>1)event.preventDefault();},{passive:false});
@@ -15,4 +19,4 @@ if(new URLSearchParams(location.search).get('mode')==='2d'){
   import('./room3d').then(({startRoom3D})=>startRoom3D()).catch(error=>{console.error(error);const host=document.getElementById('game-container')!;host.replaceChildren();const p=document.createElement('p');p.className='loading-3d';p.textContent='La scena 3D non è disponibile. ';const link=document.createElement('a');link.href='?mode=2d';link.textContent='Apri la versione 2D';p.append(link);host.append(p);});
 }
 
-else{import("./pixelCell").then(({startPixelCell})=>startPixelCell()).catch(error=>{console.error(error);const cover=document.getElementById('boot-cover')!;cover.textContent="Non riesco a caricare la cella. Ricarica la pagina per riprovare.";cover.style.cssText+=';display:grid;place-items:center;color:#fff;padding:24px;text-align:center';});}
+else startHomeScreen(async audio=>{const {startPixelCell}=await import('./pixelCell');return startPixelCell({audio,deferStart:true});});

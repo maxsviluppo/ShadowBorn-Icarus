@@ -22,7 +22,7 @@ import {Footsteps} from './footsteps';
 import {RoomAudio} from './roomAudio';
 import {cellLayerOccludes,CELL_METRES,projectCell,unprojectCell,contains,cellBlocks,cellObjects,type CellObject} from './pixelCellLayout';
 const $=(id:string)=>document.getElementById(id)!;
-export async function startPixelCell(){
+export async function startPixelCell(options:{audio?:RoomAudio;deferStart?:boolean}={}){
  initAdventureUI();
  const host=$('game-container');host.style.background='#000';
  configureNavigation(cellBlocks,.04);
@@ -59,7 +59,7 @@ export async function startPixelCell(){
  gl_FragColor.rgb=floor(clamp(gl_FragColor.rgb+threshold/levels,0.0,1.0)*levels+0.5)/levels;`);};m.customProgramCacheKey=()=>'relaxed-reference-pigment-rgb565-v1';if(m.map){m.map.minFilter=THREE.LinearMipmapLinearFilter;m.map.magFilter=THREE.NearestFilter;m.map.generateMipmaps=true;m.map.needsUpdate=true;}}}});
  const camera=new THREE.OrthographicCamera(-.9,.9,1.05,-1.05,.1,30);camera.position.set(6,5.7,6);camera.lookAt(0,.8,0);camera.updateMatrixWorld();const anchor=new THREE.Vector3(0,0,0).project(camera);
  const mixer=new THREE.AnimationMixer(hero);const actions=['Idle','Walk','Run'].map(name=>{const clip=THREE.AnimationClip.findByName(file.animations,name);if(!clip)throw new Error('Missing animation '+name);const a=mixer.clipAction(clip);a.play();a.paused=true;return a;});
- const motion=new Locomotion3D(CELL_METRES);motion.location={...WAKE_START};const footsteps=new Footsteps(),audio=new RoomAudio();let objectRun=false;let pending:CellObject|null=null,mode:'interact'|'examine'='interact',phase=0,blend=0,runBlend=0,elapsed=0,last=performance.now(),debug=false,lastTap={time:-1000,x:0,y:0};const seen=new Set<string>();let pendingVerb:Verb='interact',pendingItem:Item|undefined;
+ const motion=new Locomotion3D(CELL_METRES);motion.location={...WAKE_START};const footsteps=new Footsteps(),audio=options.audio??new RoomAudio();let objectRun=false;let pending:CellObject|null=null,mode:'interact'|'examine'='interact',phase=0,blend=0,runBlend=0,elapsed=0,last=performance.now(),debug=false,lastTap={time:-1000,x:0,y:0};const seen=new Set<string>();let pendingVerb:Verb='interact',pendingItem:Item|undefined;
  let interaction:{kind:InteractionKind;time:number;committed:boolean;object:CellObject;verb:Verb;item?:Item}|null=null;
  const revealOverlay=document.createElement('div');revealOverlay.id='room-reveal';revealOverlay.hidden=true;revealOverlay.textContent='Dopo 10 minuti...';document.body.append(revealOverlay);
  const introOverlay=document.createElement('div');introOverlay.id='wake-intro';introOverlay.style.opacity='1';document.body.append(introOverlay);let introTime=0,introFinished=false;
@@ -70,7 +70,7 @@ export async function startPixelCell(){
  document.addEventListener('keydown',()=>idleGestures.interrupt(),{capture:true});
  const introControls=[$('bag-toggle'),$('settings-toggle'),$('inventory-tray')];
  function lockIntro(locked:boolean){frame.inert=locked;introControls.forEach(e=>e.inert=locked);host.dataset.intro=locked?'active':'complete';hint.hidden=true;}
- window.addEventListener('keydown',e=>{if(!introFinished&&(e.target as HTMLElement)?.id!=='start-adventure'&&['i','Enter',' ','Escape'].includes(e.key)){e.preventDefault();e.stopImmediatePropagation();}},true);
+ window.addEventListener('keydown',e=>{if(!introFinished&&!(e.target as Element)?.closest('#home-screen')&&['i','Enter',' ','Escape'].includes(e.key)){e.preventDefault();e.stopImmediatePropagation();}},true);
  let revealing:{time:number;swapped:boolean}|null=null;
  let knocking:{time:number;hits:number}|null=null;
  let throwing:{time:number;start:{x:number;y:number}|null;impact:boolean}|null=null;
@@ -240,16 +240,6 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
   document.getElementById('boot-cover')?.remove();
  }
  loading.remove();Object.assign(host.dataset,{ready:'true',room:'0.16.0',character:'ShirtHero',background:'layered-2d'});const begin=()=>{void audio.unlock();last=performance.now();requestAnimationFrame(tick);};
- if(await audio.startMusic())begin();
- else{
-  const cover=document.getElementById('boot-cover')!;
-  cover.setAttribute('aria-label','Inizia una nuova avventura');
-  Object.assign(cover.style,{display:'grid',placeItems:'center'});
-  const start=document.createElement('button');start.id='start-adventure';start.textContent='Inizia l’avventura';
-  Object.assign(start.style,{fontFamily:'inherit',fontSize:'20px',color:'#f3dfb0',background:'#251c16',border:'1px solid #8b704a',padding:'16px 24px',cursor:'pointer'});
-  cover.append(start);start.focus();start.onclick=()=>{start.remove();begin();};
- }
+ if(!options.deferStart)begin();
+ return {start:begin};
 }
-
-
-

@@ -1,10 +1,10 @@
 import type {PropKind} from './propMotion';
 /** Shared material sound library; every instance uses the same family of samples. */
 export class RoomAudio{
-  enabled=true;musicEnabled=true;private effectsVolume=1;private musicVolume=.02;
+  enabled=true;musicEnabled=true;private effectsVolume=1;private musicVolume=.02;private musicFade=1;private musicGain:GainNode|null=null;private fadeTimer:ReturnType<typeof setTimeout>|undefined;
   constructor(){try{const raw=localStorage.getItem('shadowborn-music-volume');if(raw!==null&&raw.trim()!==''){const saved=Number(raw);if(Number.isFinite(saved))this.musicVolume=Math.max(0,Math.min(1,saved));}}catch{}}
   setEffectsVolume(v:number){this.effectsVolume=Math.max(0,Math.min(1,v));if(this.master&&this.ctx)this.master.gain.setTargetAtTime(this.enabled?.65*this.effectsVolume:0,this.ctx.currentTime,.02);}
-  setMusicVolume(v:number){this.musicVolume=Math.max(0,Math.min(1,v));if(this.music)this.music.volume=this.musicVolume;try{localStorage.setItem('shadowborn-music-volume',String(this.musicVolume));}catch{}}
+  setMusicVolume(v:number){this.musicVolume=Math.max(0,Math.min(1,v));this.applyMusicVolume();try{localStorage.setItem('shadowborn-music-volume',String(this.musicVolume));}catch{}}
   getMusicVolume(){return this.musicVolume;}
   played=0;last='';ready=false;
   private ctx:AudioContext|null=null;private master:GainNode|null=null;
@@ -13,14 +13,33 @@ export class RoomAudio{
   private loading:Promise<void>|null=null;
   async startMusic(){
     if(!this.musicEnabled)return true;
-    if(!this.music){this.music=new Audio('/assets/audio/game-background.mp3');this.music.loop=true;this.music.volume=this.musicVolume;}
+    if(!this.music){this.music=new Audio('/assets/audio/game-background.mp3?v=20261009');this.music.loop=true;this.applyMusicVolume();}
+    this.connectMusic();
     try{await this.music.play();return true;}catch{return false;}
+  }
+  private applyMusicVolume(){
+    const volume=this.musicVolume*this.musicFade;
+    if(this.musicGain&&this.ctx){this.musicGain.gain.cancelScheduledValues(this.ctx.currentTime);this.musicGain.gain.setValueAtTime(volume,this.ctx.currentTime);}
+    else if(this.music)this.music.volume=volume;
+  }
+  private connectMusic(){
+    if(!this.ctx||!this.music||this.musicGain||!this.ctx.createMediaElementSource)return;
+    try{const source=this.ctx.createMediaElementSource(this.music);this.musicGain=this.ctx.createGain();source.connect(this.musicGain);this.musicGain.connect(this.ctx.destination);this.music.volume=1;this.applyMusicVolume();}catch{}
+  }
+  prepareMusicTransition(){this.musicFade=0;this.applyMusicVolume();void this.unlock();}
+  fadeInMusic(seconds=1.4){
+    clearTimeout(this.fadeTimer);if(this.music)this.music.currentTime=0;
+    this.musicFade=0;this.applyMusicVolume();void this.startMusic();
+    if(this.musicGain&&this.ctx){this.musicGain.gain.linearRampToValueAtTime(this.musicVolume,this.ctx.currentTime+seconds);}
+    else{const began=performance.now();const frame=()=>{this.musicFade=Math.min(1,(performance.now()-began)/(seconds*1000));this.applyMusicVolume();if(this.musicFade<1)requestAnimationFrame(frame);};requestAnimationFrame(frame);}
+    this.fadeTimer=setTimeout(()=>{this.musicFade=1;this.applyMusicVolume();},seconds*1000);
   }
   async unlock(){try{
     void this.startMusic();
     if(!this.ctx){this.ctx=new AudioContext({latencyHint:'interactive'});this.master=this.ctx.createGain();this.master.gain.value=this.enabled?.65*this.effectsVolume:0;this.master.connect(this.ctx.destination);
       this.loading=Promise.all([...['book','chest','cabinet','door'].flatMap(k=>['open','close'].map(a=>k+'-'+a)),'lock-open','bottle-broken','mouse-squeak','skull-rattle'].map(async id=>{const r=await fetch('/assets/audio/'+id+(['bottle-broken','skull-rattle'].includes(id)?'.mp3':'.wav'));if(!r.ok)throw Error(id);this.buffers.set(id,await this.ctx!.decodeAudioData(await r.arrayBuffer()));})).then(()=>{this.ready=true;}).catch(()=>{this.ready=false;});
     }
+    this.connectMusic();
     if(this.ctx.state==='suspended')await this.ctx.resume();
     if(this.musicEnabled&&this.music?.paused)void this.music.play().catch(()=>{});
   }catch{this.ready=false;}}
