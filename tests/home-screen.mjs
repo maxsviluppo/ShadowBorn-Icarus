@@ -1,14 +1,14 @@
 import fs from 'node:fs';import assert from 'node:assert/strict';import ts from 'typescript';
 let unlocked=0,faded=0,started=0;const timers=[];
 class RoomAudio{prepareMusicTransition(){unlocked++;}fadeInMusic(){faded++;}pause(){}}
-class El{constructor(){this.classList={add(){},remove(){}};this.paused=true;}setAttribute(){}removeAttribute(){}addEventListener(){}removeEventListener(){}focus(){}remove(){this.removed=true;}play(){this.paused=false;return Promise.resolve();}pause(){this.paused=true;}}
+class El{constructor(){this.classList={add(){},remove(){}};this.paused=true;}append(){}setAttribute(){}removeAttribute(){}addEventListener(){}removeEventListener(){}focus(){}remove(){this.removed=true;}play(){this.paused=false;return Promise.resolve();}pause(){this.paused=true;}}
 globalThis.Element=El;globalThis.Audio=El;globalThis.matchMedia=()=>({matches:false});globalThis.requestAnimationFrame=()=>0;globalThis.setTimeout=fn=>{timers.push(fn);return 1;};
 const els=Object.fromEntries(['home-screen','home-start','home-sound','home-status','home-video','shell'].map(k=>[k,new El()]));
-globalThis.document={getElementById:k=>els[k],querySelector:()=>els.shell,body:new El(),addEventListener(){},removeEventListener(){}};
+const created=[];globalThis.document={createElement:()=>{const el=new El();created.push(el);return el;},getElementById:k=>els[k],querySelector:()=>els.shell,body:new El(),addEventListener(){},removeEventListener(){}};
 let code=ts.transpileModule(fs.readFileSync('src/homeScreen.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.ES2022,target:ts.ScriptTarget.ES2022}}).outputText.replace(/import .*?from .*?;\s*/, '');
 globalThis.RoomAudio=RoomAudio;const {startHomeScreen}=await import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));
 let ready;startHomeScreen(()=>new Promise(resolve=>{ready=resolve;}));assert.equal(els.shell.inert,true);
 const click=els['home-start'].onclick;const transition=click();assert.equal(unlocked,1,'audio unlocked before waiting for assets');await click();assert.equal(unlocked,1,'double tap ignored');assert.equal(started,0);
-ready({start(){started++;}});await Promise.resolve();await Promise.resolve();assert.equal(started,0,'cell waits for black fade');assert.equal(timers.length,1);timers.shift()();await transition;
+ready({start(){started++;}});await Promise.resolve();await Promise.resolve();assert.equal(started,0,'cell waits for black fade');assert.equal(timers.length,0,'game loading does not end the presentation');assert.equal(created[0].playbackRate,.8);assert.equal(created[1].hidden,false);created[1].onclick();created[0].onended();await Promise.resolve();await Promise.resolve();assert.equal(timers.length,1,'skip and ended finish only once');timers.shift()();await Promise.resolve();await Promise.resolve();
 assert.equal(started,1);assert.equal(faded,1);assert.equal(els.shell.inert,false);assert.equal(els['home-screen'].removed,true);
 console.log('PASS: home waits for assets and fade, unlocks audio in gesture and ignores double tap.');

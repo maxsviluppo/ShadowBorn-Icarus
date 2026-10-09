@@ -24,3 +24,11 @@ body.home-active .game-shell{visibility:hidden}
 }
 @media(max-height:500px) and (min-aspect-ratio:1/1){.home-title{top:2vh;width:30vw}#home-start{bottom:1vh;width:21vw}#home-status{bottom:0;font-size:11px}}
 @media(prefers-reduced-motion:reduce){#home-start{transition:none}#home-screen::after{transition-duration:.3s}}
+
+#home-presentation{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;opacity:0;pointer-events:none;transition:opacity 1.4s ease}
+.home-title,#home-start,#home-sound{transition:opacity .7s ease,filter .15s,scale .15s}
+#home-screen.presenting .home-title,#home-screen.presenting #home-start,#home-screen.presenting #home-sound{opacity:0;pointer-events:none}
+#home-screen.presentation-ready #home-presentation{opacity:1}
+.cinematic-skip{position:fixed;right:max(22px,env(safe-area-inset-right));bottom:max(22px,env(safe-area-inset-bottom));z-index:100002;padding:10px 24px;border:2px solid #79502a;border-radius:4px;background:linear-gradient(#f4d58d,#c89c54);box-shadow:0 3px 0 #382313;color:#382313;font:bold 18px Georgia,serif;cursor:pointer;text-shadow:0 1px #ffe5ad}
+.cinematic-skip:hover,.cinematic-skip:focus-visible{filter:brightness(1.15)}
+.cinematic-skip[hidden]{display:none}

@@ -63,6 +63,8 @@ export async function startPixelCell(options:{audio?:RoomAudio;deferStart?:boole
  let interaction:{kind:InteractionKind;time:number;committed:boolean;object:CellObject;verb:Verb;item?:Item}|null=null;
  const revealOverlay=document.createElement('div');revealOverlay.id='room-reveal';revealOverlay.hidden=true;revealOverlay.textContent='Dopo 10 minuti...';document.body.append(revealOverlay);
  const introOverlay=document.createElement('div');introOverlay.id='wake-intro';introOverlay.style.opacity='1';document.body.append(introOverlay);let introTime=0,introFinished=false;
+ const wakeSkip=document.createElement('button');wakeSkip.id='wake-skip';wakeSkip.className='cinematic-skip';wakeSkip.textContent='Salta ›';wakeSkip.hidden=true;document.body.append(wakeSkip);
+ wakeSkip.onclick=()=>{if(introFinished)return;introTime=WAKE_DURATION;wakeSkip.hidden=true;clearTimeout(dialogueTimer);$('dialogue').textContent='';};
  const head=hero.getObjectByName('Head')!;
  const idleGestures=new IdleGestures();
  let skullWasMoving=false;
@@ -70,7 +72,7 @@ export async function startPixelCell(options:{audio?:RoomAudio;deferStart?:boole
  document.addEventListener('keydown',()=>idleGestures.interrupt(),{capture:true});
  const introControls=[$('bag-toggle'),$('settings-toggle'),$('inventory-tray')];
  function lockIntro(locked:boolean){frame.inert=locked;introControls.forEach(e=>e.inert=locked);host.dataset.intro=locked?'active':'complete';hint.hidden=true;}
- window.addEventListener('keydown',e=>{if(!introFinished&&!(e.target as Element)?.closest('#home-screen')&&['i','Enter',' ','Escape'].includes(e.key)){e.preventDefault();e.stopImmediatePropagation();}},true);
+ window.addEventListener('keydown',e=>{if(!introFinished&&!(e.target as Element)?.closest('#home-screen,#wake-skip')&&['i','Enter',' ','Escape'].includes(e.key)){e.preventDefault();e.stopImmediatePropagation();}},true);
  let revealing:{time:number;swapped:boolean}|null=null;
  let knocking:{time:number;hits:number}|null=null;
  let throwing:{time:number;start:{x:number;y:number}|null;impact:boolean}|null=null;
@@ -139,7 +141,7 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
   hold:target=>{const menu=touchMenus.get(target.closest('[data-object]')!);if(menu){menu();return true;}return false;}
  });
 
- $('reset').onclick=()=>{introTime=0;introFinished=false;introOverlay.hidden=false;introOverlay.style.opacity='1';lockIntro(true);clearTimeout(dialogueTimer);$('dialogue').textContent='';document.querySelectorAll<HTMLDialogElement>('dialog[open]').forEach(d=>d.close());mouse.reset();revealing=null;revealOverlay.hidden=true;bg.clearRect(0,0,1024,559);bg.drawImage(background,0,0,1024,559);knocking=null;skullDialogue.reset();$('finish').hidden=true;throwing=null;interaction=null;motion.reset();motion.location={...WAKE_START};pending=null;Object.assign(puzzle,new CellPuzzle());ui.clear();phase=blend=runBlend=0;lastTap={time:-1000,x:0,y:0};seen.clear();};
+ $('reset').onclick=()=>{wakeSkip.hidden=false;introTime=0;introFinished=false;introOverlay.hidden=false;introOverlay.style.opacity='1';lockIntro(true);clearTimeout(dialogueTimer);$('dialogue').textContent='';document.querySelectorAll<HTMLDialogElement>('dialog[open]').forEach(d=>d.close());mouse.reset();revealing=null;revealOverlay.hidden=true;bg.clearRect(0,0,1024,559);bg.drawImage(background,0,0,1024,559);knocking=null;skullDialogue.reset();$('finish').hidden=true;throwing=null;interaction=null;motion.reset();motion.location={...WAKE_START};pending=null;Object.assign(puzzle,new CellPuzzle());ui.clear();phase=blend=runBlend=0;lastTap={time:-1000,x:0,y:0};seen.clear();};
  $('debug').onclick=()=>{debug=!debug;$('debug').setAttribute('aria-pressed',String(debug));};
  window.addEventListener('keydown',e=>{if(e.key==='Escape'&&!throwing&&!interaction){pending=null;motion.stop();}if(e.key.toLowerCase()==='d')debug=!debug;});
  document.addEventListener('visibilitychange',()=>{last=performance.now();if(document.hidden)audio.pause();});
@@ -213,7 +215,7 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
    poseBones[0].rotateX(-1.4*wake.leftLeg);poseBones[1].rotateX(-1.4*wake.rightLeg);
    poseBones[2].rotateX(1.4*wake.leftLeg);poseBones[3].rotateX(1.4*wake.rightLeg);
    poseBones[4].rotateX(wake.ankle);poseBones[5].rotateX(wake.ankle);
-  }else if(!introFinished){introFinished=true;introOverlay.hidden=true;host.dataset.introStage='playing';lockIntro(false);say('Bon. Questa prigione non si lascerà da sola.');}
+  }else if(!introFinished){introFinished=true;wakeSkip.hidden=true;introOverlay.hidden=true;host.dataset.introStage='playing';lockIntro(false);say('Bon. Questa prigione non si lascerà da sola.');}
   renderer.render(scene,camera);
   body.position.copy(bodyBase);poseBones.forEach((b,i)=>b.quaternion.copy(boneBases[i]));
   arm.quaternion.copy(armBase);forearm.quaternion.copy(forearmBase);torso.quaternion.copy(torsoBase);head.quaternion.copy(headBase);
@@ -239,7 +241,7 @@ if(object.id==='barrel'&&pendingItem==='bottle'&&puzzle.has('bottle')){throwing=
   Object.assign(host.dataset,{motion:motion.state,walkable:String(walkable(motion.location)),u:motion.location.u.toFixed(5),v:motion.location.v.toFixed(5),pending:pending?.id??'',speed:motion.speed.toFixed(3)});
   document.getElementById('boot-cover')?.remove();
  }
- loading.remove();Object.assign(host.dataset,{ready:'true',room:'0.16.0',character:'ShirtHero',background:'layered-2d'});const begin=()=>{void audio.unlock();last=performance.now();requestAnimationFrame(tick);};
+ loading.remove();Object.assign(host.dataset,{ready:'true',room:'0.16.0',character:'ShirtHero',background:'layered-2d'});const begin=()=>{wakeSkip.hidden=false;void audio.unlock();last=performance.now();requestAnimationFrame(tick);};
  if(!options.deferStart)begin();
  return {start:begin};
 }
